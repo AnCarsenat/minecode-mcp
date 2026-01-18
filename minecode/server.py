@@ -6,6 +6,11 @@ Provides tools for searching wiki info, checking syntax, and other utilities
 
 import asyncio
 import json
+import os
+import platform
+from pathlib import Path
+from datetime import datetime
+import shutil
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -376,6 +381,56 @@ TOOLS = [
                 }
             },
             "required": ["version"]
+        }
+    ),
+    Tool(
+        name="get_minecraft_logs",
+        description="Get Minecraft logs from the game instance for troubleshooting. Returns the latest log content.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "minecraft_dir": {
+                    "type": "string",
+                    "description": "Path to .minecraft directory (optional, defaults to standard location)"
+                },
+                "log_file": {
+                    "type": "string",
+                    "description": "Specific log file to read (default: 'latest.log')",
+                    "enum": ["latest.log", "debug.log"]
+                },
+                "lines": {
+                    "type": "integer",
+                    "description": "Number of lines to return from the end of the log (default: 100, max: 1000)"
+                },
+                "filter": {
+                    "type": "string",
+                    "description": "Optional filter string to search for specific log entries"
+                }
+            },
+            "required": []
+        }
+    ),
+    Tool(
+        name="clear_minecraft_logs",
+        description="Clear or backup Minecraft logs. Can archive old logs or clear the current log file.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "minecraft_dir": {
+                    "type": "string",
+                    "description": "Path to .minecraft directory (optional, defaults to standard location)"
+                },
+                "action": {
+                    "type": "string",
+                    "description": "Action to perform",
+                    "enum": ["clear", "backup", "clear_old"]
+                },
+                "keep_backup": {
+                    "type": "boolean",
+                    "description": "Whether to keep a backup when clearing (default: true)"
+                }
+            },
+            "required": ["action"]
         }
     )
 ]
@@ -787,6 +842,203 @@ def handle_misode_get_recipes(version: str, recipe_type: str = "all", search: st
         return {"success": False, "error": str(e)}
 
 
+def get_minecraft_directory(minecraft_dir: str = None) -> Path:
+    """Get the Minecraft directory path based on OS"""
+    if minecraft_dir:
+        return Path(minecraft_dir)
+    
+    system = platform.system()
+    if system == "Windows":
+        # Windows: %APPDATA%\.minecraft
+        appdata = os.getenv("APPDATA")
+        if appdata:
+            return Path(appdata) / ".minecraft"
+    elif system == "Darwin":
+        # macOS: ~/Library/Application Support/minecraft
+        return Path.home() / "Library" / "Application Support" / "minecraft"
+    else:
+        # Linux: ~/.minecraft
+        return Path.home() / ".minecraft"
+    
+    # Fallback
+    return Path.home() / ".minecraft"
+
+
+def handle_get_minecraft_logs(
+    minecraft_dir: str = None,
+    log_file: str = "latest.log",
+    lines: int = 100,
+    filter: str = None
+) -> dict:
+    """Handle get_minecraft_logs tool"""
+    try:
+        # Get Minecraft directory
+        mc_dir = get_minecraft_directory(minecraft_dir)
+        logs_dir = mc_dir / "logs"
+        
+        # Check if logs directory exists
+        if not logs_dir.exists():
+            return {
+                "success": False,
+                "error": f"Logs directory not found at {logs_dir}. Make sure Minecraft has been run at least once."
+            }
+        
+        # Get log file path
+        log_path = logs_dir / log_file
+        
+        if not log_path.exists():
+            # List available log files
+            available_logs = [f.name for f in logs_dir.iterdir() if f.is_file()]
+            return {
+                "success": False,
+                "error": f"Log file '{log_file}' not found.",
+                "available_logs": available_logs[:10]
+            }
+        
+        # Read the log file
+        try:
+            with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+                log_content = f.readlines()
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to read log file: {str(e)}"
+            }
+        
+        # Apply filter if specified
+        if filter:
+            log_content = [line for line in log_content if filter.lower() in line.lower()]
+        
+        # Limit lines
+        lines = min(lines, 1000)  # Cap at 1000 lines
+        if len(log_content) > lines:
+            log_content = log_content[-lines:]
+        
+        # Get file info
+        file_size = log_path.stat().st_size
+        file_modified = datetime.fromtimestamp(log_path.stat().st_mtime).isoformat()
+        
+        return {
+            "success": True,
+            "log_file": log_file,
+            "log_path": str(log_path),
+            "file_size_bytes": file_size,
+            "file_modified": file_modified,
+            "total_lines": len(log_content),
+            "lines_returned": len(log_content),
+            "filtered": filter is not None,
+            "filter_term": filter,
+            "content": "".join(log_content)
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def handle_clear_minecraft_logs(
+    minecraft_dir: str = None,
+    action: str = "clear",
+    keep_backup: bool = True
+) -> dict:
+    """Handle clear_minecraft_logs tool"""
+    try:
+        # Get Minecraft directory
+        mc_dir = get_minecraft_directory(minecraft_dir)
+        logs_dir = mc_dir / "logs"
+        
+        # Check if logs directory exists
+        if not logs_dir.exists():
+            return {
+                "success": False,
+                "error": f"Logs directory not found at {logs_dir}"
+            }
+        
+        if action == "clear":
+            # Clear the latest.log file
+            latest_log = logs_dir / "latest.log"
+            
+            if not latest_log.exists():
+                return {
+                    "success": False,
+                    "error": "latest.log not found"
+                }
+            
+            # Backup if requested
+            backup_path = None
+            if keep_backup:
+                timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+                backup_path = logs_dir / f"latest-backup-{timestamp}.log"
+                shutil.copy2(latest_log, backup_path)
+            
+            # Clear the file
+            with open(latest_log, "w", encoding="utf-8") as f:
+                f.write("")
+            
+            return {
+                "success": True,
+                "action": "clear",
+                "file": "latest.log",
+                "backup_created": keep_backup,
+                "backup_path": str(backup_path) if backup_path else None,
+                "message": "Log file cleared successfully"
+            }
+        
+        elif action == "backup":
+            # Backup the latest.log file
+            latest_log = logs_dir / "latest.log"
+            
+            if not latest_log.exists():
+                return {
+                    "success": False,
+                    "error": "latest.log not found"
+                }
+            
+            timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+            backup_path = logs_dir / f"latest-backup-{timestamp}.log"
+            shutil.copy2(latest_log, backup_path)
+            
+            return {
+                "success": True,
+                "action": "backup",
+                "backup_path": str(backup_path),
+                "message": f"Backup created at {backup_path.name}"
+            }
+        
+        elif action == "clear_old":
+            # Delete old log files (keep latest.log and recent backups)
+            log_files = [f for f in logs_dir.iterdir() if f.is_file() and f.name != "latest.log"]
+            
+            # Sort by modification time
+            log_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+            
+            # Keep the 5 most recent files, delete the rest
+            files_to_delete = log_files[5:]
+            deleted_count = 0
+            
+            for log_file in files_to_delete:
+                try:
+                    log_file.unlink()
+                    deleted_count += 1
+                except Exception:
+                    pass
+            
+            return {
+                "success": True,
+                "action": "clear_old",
+                "deleted_count": deleted_count,
+                "kept_count": len(log_files) - deleted_count,
+                "message": f"Deleted {deleted_count} old log files"
+            }
+        
+        else:
+            return {
+                "success": False,
+                "error": f"Unknown action: {action}"
+            }
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 # Register tool handler
 @server.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[TextContent]:
@@ -878,6 +1130,20 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 version=arguments["version"],
                 recipe_type=arguments.get("recipe_type", "all"),
                 search=arguments.get("search")
+            )
+        # Minecraft logs tools
+        elif name == "get_minecraft_logs":
+            result = handle_get_minecraft_logs(
+                minecraft_dir=arguments.get("minecraft_dir"),
+                log_file=arguments.get("log_file", "latest.log"),
+                lines=arguments.get("lines", 100),
+                filter=arguments.get("filter")
+            )
+        elif name == "clear_minecraft_logs":
+            result = handle_clear_minecraft_logs(
+                minecraft_dir=arguments.get("minecraft_dir"),
+                action=arguments["action"],
+                keep_backup=arguments.get("keep_backup", True)
             )
         else:
             raise ValueError(f"Unknown tool: {name}")
