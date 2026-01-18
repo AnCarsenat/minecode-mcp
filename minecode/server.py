@@ -553,11 +553,11 @@ def handle_get_project_version(datapack_path: str) -> dict:
         })
         
         # Check for supported_formats (multiversion support)
+        # Can be a range [min, max] or a single integer
         supported_formats = pack_info.get("supported_formats")
         multiversion_info = None
         
         if supported_formats is not None:
-            # Can be a range [min, max] or a single integer
             if isinstance(supported_formats, list):
                 if len(supported_formats) == 2:
                     # Validate that elements are integers
@@ -605,6 +605,7 @@ def handle_get_project_version(datapack_path: str) -> dict:
         # Add multiversion support info if present
         if multiversion_info:
             result["multiversion_support"] = multiversion_info
+            # Add explanatory note only if not already present
             if "note" not in multiversion_info:
                 result["note"] = "This datapack declares multiversion compatibility (supported_formats)"
         
