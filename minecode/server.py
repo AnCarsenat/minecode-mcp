@@ -833,9 +833,8 @@ def handle_validate_function(function_path: str, version: str) -> dict:
         with open(function_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
         
-        # Get command syntax tree from Spyglass
+        # Get available commands from Spyglass
         try:
-            command_tree = spyglass.get_commands(version)
             available_commands = spyglass.get_command_names(version)
         except Exception as e:
             return {
@@ -878,9 +877,6 @@ def handle_validate_function(function_path: str, version: str) -> dict:
                     "command": command_name,
                     "content": stripped
                 })
-                
-                # Additional syntax checks could be added here
-                # For now, we do basic validation that the command exists
         
         # Build result
         result = {
