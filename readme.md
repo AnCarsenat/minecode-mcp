@@ -12,7 +12,7 @@ MineCode is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) s
 
 ## ✨ Features
 
-- 🔧 **20 MCP Tools** for Minecraft development
+- 🔧 **19 MCP Tools** for Minecraft development
 - 📚 **Minecraft Wiki** integration (search, pages, categories)
 - 🐛 **Mojira** bug tracker search
 - 🔍 **Spyglass API** (registries, commands, block states, function validation)
