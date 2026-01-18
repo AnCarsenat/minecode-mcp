@@ -24,6 +24,36 @@ from .scrappers import misode
 server = Server("minecode-server")
 
 
+# Pack format to Minecraft version mapping
+# Based on https://minecraft.wiki/w/Pack_format
+PACK_FORMAT_MAP = {
+    # 1.20.5+ versions
+    48: {"versions": ["1.21.2", "1.21.3"], "description": "1.21.2-1.21.3"},
+    41: {"versions": ["1.21", "1.21.1"], "description": "1.21-1.21.1"},
+    34: {"versions": ["1.20.5", "1.20.6"], "description": "1.20.5-1.20.6"},
+    # 1.20.x versions
+    26: {"versions": ["1.20.3", "1.20.4"], "description": "1.20.3-1.20.4"},
+    18: {"versions": ["1.20.2"], "description": "1.20.2"},
+    15: {"versions": ["1.20", "1.20.1"], "description": "1.20-1.20.1"},
+    # 1.19.x versions
+    12: {"versions": ["1.19.4"], "description": "1.19.4"},
+    11: {"versions": ["1.19.3"], "description": "1.19.3"},
+    10: {"versions": ["1.19", "1.19.1", "1.19.2"], "description": "1.19-1.19.2"},
+    # 1.18.x versions
+    9: {"versions": ["1.18.2"], "description": "1.18.2"},
+    8: {"versions": ["1.18", "1.18.1"], "description": "1.18-1.18.1"},
+    # 1.17.x versions
+    7: {"versions": ["1.17", "1.17.1"], "description": "1.17-1.17.1"},
+    # 1.16.x versions
+    6: {"versions": ["1.16.2", "1.16.3", "1.16.4", "1.16.5"], "description": "1.16.2-1.16.5"},
+    5: {"versions": ["1.16", "1.16.1"], "description": "1.16-1.16.1"},
+    # Older versions
+    4: {"versions": ["1.15", "1.15.1", "1.15.2"], "description": "1.15-1.15.2"},
+    # Latest snapshot format
+    94: {"versions": ["25w03a+"], "description": "1.21.5+ Snapshots"},
+}
+
+
 # Tool definitions
 TOOLS = [
     Tool(
@@ -446,35 +476,6 @@ def handle_validate_datapack(datapack_path: str, mc_version: str) -> dict:
 
 def handle_get_project_version(datapack_path: str) -> dict:
     """Handle get_project_version tool - reads pack.mcmeta and returns version info"""
-    # Pack format to Minecraft version mapping
-    # Based on https://minecraft.wiki/w/Pack_format
-    PACK_FORMAT_MAP = {
-        # 1.20.5+ versions
-        48: {"versions": ["1.21.2", "1.21.3"], "description": "1.21.2-1.21.3"},
-        41: {"versions": ["1.21", "1.21.1"], "description": "1.21-1.21.1"},
-        34: {"versions": ["1.20.5", "1.20.6"], "description": "1.20.5-1.20.6"},
-        # 1.20.x versions
-        26: {"versions": ["1.20.3", "1.20.4"], "description": "1.20.3-1.20.4"},
-        18: {"versions": ["1.20.2"], "description": "1.20.2"},
-        15: {"versions": ["1.20", "1.20.1"], "description": "1.20-1.20.1"},
-        # 1.19.x versions
-        12: {"versions": ["1.19.4"], "description": "1.19.4"},
-        11: {"versions": ["1.19.3"], "description": "1.19.3"},
-        10: {"versions": ["1.19", "1.19.1", "1.19.2"], "description": "1.19-1.19.2"},
-        # 1.18.x versions
-        9: {"versions": ["1.18.2"], "description": "1.18.2"},
-        8: {"versions": ["1.18", "1.18.1"], "description": "1.18-1.18.1"},
-        # 1.17.x versions
-        7: {"versions": ["1.17", "1.17.1"], "description": "1.17-1.17.1"},
-        # 1.16.x versions
-        6: {"versions": ["1.16.2", "1.16.3", "1.16.4", "1.16.5"], "description": "1.16.2-1.16.5"},
-        5: {"versions": ["1.16", "1.16.1"], "description": "1.16-1.16.1"},
-        # Older versions
-        4: {"versions": ["1.15", "1.15.1", "1.15.2"], "description": "1.15-1.15.2"},
-        # Latest snapshot format (as of Jan 2026)
-        94: {"versions": ["25w03a+"], "description": "1.21.5+ Snapshots"},
-    }
-    
     try:
         # Resolve path
         pack_path = Path(datapack_path).resolve()
@@ -519,20 +520,33 @@ def handle_get_project_version(datapack_path: str) -> dict:
         supported_formats = pack_info.get("supported_formats")
         multiversion_info = None
         
-        if supported_formats:
+        if supported_formats is not None:
             # Can be a range [min, max] or a single integer
-            if isinstance(supported_formats, list) and len(supported_formats) == 2:
-                min_format, max_format = supported_formats
-                multiversion_info = {
-                    "min_format": min_format,
-                    "max_format": max_format,
-                    "min_version": PACK_FORMAT_MAP.get(min_format, {}).get("description", "Unknown"),
-                    "max_version": PACK_FORMAT_MAP.get(max_format, {}).get("description", "Unknown")
-                }
+            if isinstance(supported_formats, list):
+                if len(supported_formats) == 2:
+                    min_format, max_format = supported_formats
+                    multiversion_info = {
+                        "min_format": min_format,
+                        "max_format": max_format,
+                        "min_version": PACK_FORMAT_MAP.get(min_format, {}).get("description", "Unknown"),
+                        "max_version": PACK_FORMAT_MAP.get(max_format, {}).get("description", "Unknown")
+                    }
+                else:
+                    # Handle unexpected list format
+                    multiversion_info = {
+                        "raw_value": supported_formats,
+                        "note": f"Unexpected supported_formats format (expected 2 elements, got {len(supported_formats)})"
+                    }
             elif isinstance(supported_formats, int):
                 multiversion_info = {
                     "format": supported_formats,
                     "version": PACK_FORMAT_MAP.get(supported_formats, {}).get("description", "Unknown")
+                }
+            else:
+                # Handle unexpected type
+                multiversion_info = {
+                    "raw_value": str(supported_formats),
+                    "note": f"Unexpected supported_formats type: {type(supported_formats).__name__}"
                 }
         
         result = {
@@ -547,7 +561,8 @@ def handle_get_project_version(datapack_path: str) -> dict:
         # Add multiversion support info if present
         if multiversion_info:
             result["multiversion_support"] = multiversion_info
-            result["note"] = "This datapack uses multiversion support tricks (supported_formats)"
+            if "note" not in multiversion_info:
+                result["note"] = "This datapack uses multiversion support tricks (supported_formats)"
         
         return result
         
