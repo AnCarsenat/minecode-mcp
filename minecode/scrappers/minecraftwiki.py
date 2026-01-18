@@ -1,486 +1,474 @@
 """
-Misode Data Pack Generators Client - Optimized for MCP Agents
-Website: https://misode.github.io/
-GitHub: https://github.com/misode/misode.github.io
-
-This module provides clean, simple access to Minecraft data pack presets
-and schemas. Designed for AI agents using the MCP protocol.
+Minecraft.wiki API Client for Minecraft wiki pages
+Uses the MediaWiki API: https://www.mediawiki.org/wiki/API:Main_page
 """
 
 import requests
+from bs4 import BeautifulSoup
+from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 import re
 
-# Base URLs
-MISODE_SITE = "https://misode.github.io"
-GITHUB_RAW = "https://raw.githubusercontent.com/misode/mcmeta"
-GITHUB_SITEMAP = "https://raw.githubusercontent.com/misode/misode.github.io/master/public/sitemap.txt"
-TECHNICAL_CHANGES_API = "https://api.github.com/repos/misode/technical-changes/contents"
-TECHNICAL_CHANGES_RAW = "https://raw.githubusercontent.com/misode/technical-changes/main"
-
-# Generator types available on the site
-GENERATORS = {
-    "loot_table": "loot-table",
-    "predicate": "predicate", 
-    "item_modifier": "item-modifier",
-    "advancement": "advancement",
-    "recipe": "recipe",
-    "text_component": "text-component",
-    "chat_type": "chat-type",
-    "dimension": "dimension",
-    "dimension_type": "dimension-type",
-    "worldgen_biome": "worldgen/biome",
-    "worldgen_configured_carver": "worldgen/configured-carver",
-    "worldgen_configured_feature": "worldgen/configured-feature",
-    "worldgen_density_function": "worldgen/density-function",
-    "worldgen_placed_feature": "worldgen/placed-feature",
-    "worldgen_noise": "worldgen/noise",
-    "worldgen_noise_settings": "worldgen/noise-settings",
-    "worldgen_structure": "worldgen/structure",
-    "worldgen_structure_set": "worldgen/structure-set",
-    "worldgen_processor_list": "worldgen/processor-list",
-    "worldgen_template_pool": "worldgen/template-pool",
-    "worldgen_world_preset": "worldgen/world-preset",
-    "worldgen_flat_level_generator_preset": "worldgen/flat-level-generator-preset",
-    "damage_type": "damage-type",
-    "trim_material": "trim-material",
-    "trim_pattern": "trim-pattern",
-    "banner_pattern": "banner-pattern",
-    "painting_variant": "painting-variant",
-    "wolf_variant": "wolf-variant",
-    "enchantment": "enchantment",
-    "jukebox_song": "jukebox-song",
-}
-
-
-def _request(url: str, json_response: bool = True) -> Any:
-    """Make HTTP request with error handling."""
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        return response.json() if json_response else response.text
-    except Exception as e:
-        raise Exception(f"Request failed for {url}: {str(e)}")
+BASE_URL = "https://minecraft.wiki"
+API_URL = "https://minecraft.wiki/api.php"
+PAGE_URL = "https://minecraft.wiki/w/"
 
 
 # ============================================================================
-# Version Functions - Optimized for MCP
+# Data Classes
 # ============================================================================
 
-def list_versions() -> List[str]:
-    """
-    Get list of all Minecraft version IDs.
-    
-    Returns:
-        List of version IDs ordered newest to oldest
-        Example: ["1.21.11", "1.21.10", "24w14a", ...]
-    """
-    try:
-        url = f"{GITHUB_RAW}/summary/versions/data.min.json"
-        data = _request(url)
-        
-        if isinstance(data, list):
-            # If it's a list of dicts with 'id' field
-            if data and isinstance(data[0], dict) and 'id' in data[0]:
-                return [v['id'] for v in data]
-            # If it's a list of strings
-            return data
-        elif isinstance(data, dict):
-            # If it's a dict, return keys
-            return list(data.keys())
-        
-        return []
-    except Exception as e:
-        print(f"Error listing versions: {e}")
-        return []
+@dataclass
+class SearchResult:
+    """Represents a wiki search result"""
+    title: str
+    url: str
+    snippet: str = ""
 
 
-def get_version_info(version_id: str) -> Optional[Dict[str, Any]]:
+@dataclass
+class PageInfo:
+    """Represents basic page information"""
+    pageid: int
+    title: str
+    url: str
+
+
+@dataclass
+class PageContent:
+    """Represents parsed page content"""
+    title: str
+    pageid: int
+    url: str
+    extract: str  # Plain text summary
+    sections: List[Dict[str, Any]]
+    categories: List[str]
+
+
+@dataclass
+class CommandInfo:
+    """Represents a Minecraft command"""
+    name: str
+    url: str
+
+
+# ============================================================================
+# API Functions
+# ============================================================================
+
+def _make_request(params: dict) -> dict:
+    """Make a request to the MediaWiki API"""
+    params["format"] = "json"
+    response = requests.get(API_URL, params=params, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+
+def search(query: str, limit: int = 10) -> List[SearchResult]:
     """
-    Get detailed information about a specific version.
+    Search the Minecraft Wiki using OpenSearch protocol.
     
     Args:
-        version_id: Version ID (e.g., "1.21.11")
-        
+        query: Search query string
+        limit: Maximum number of results (default 10, max 100)
+    
     Returns:
-        Dictionary with version metadata or None
+        List of SearchResult objects with title and URL
     """
-    try:
-        url = f"{GITHUB_RAW}/summary/versions/data.min.json"
-        data = _request(url)
+    params = {
+        "action": "opensearch",
+        "search": query,
+        "limit": min(limit, 100),
+        "namespace": 0  # Main namespace only
+    }
+    
+    data = _make_request(params)
+    
+    # OpenSearch returns: [query, [titles], [descriptions], [urls]]
+    results = []
+    if len(data) >= 4:
+        titles = data[1]
+        descriptions = data[2]
+        urls = data[3]
         
-        if isinstance(data, list):
-            for v in data:
-                if isinstance(v, dict) and v.get('id') == version_id:
-                    return v
-        elif isinstance(data, dict):
-            return data.get(version_id)
-        
-        return None
-    except Exception:
-        return None
+        for i, title in enumerate(titles):
+            results.append(SearchResult(
+                title=title,
+                url=urls[i] if i < len(urls) else f"{PAGE_URL}{title.replace(' ', '_')}",
+                snippet=descriptions[i] if i < len(descriptions) else ""
+            ))
+    
+    return results
 
 
-def get_latest_release() -> Optional[str]:
-    """Get the latest stable release version ID."""
-    versions = list_versions()
-    for version in versions:
-        if re.match(r"^\d+\.\d+(\.\d+)?$", version):
-            return version
+def search_fulltext(query: str, limit: int = 10) -> List[SearchResult]:
+    """
+    Full-text search with snippets showing matches.
+    
+    Args:
+        query: Search query string
+        limit: Maximum number of results
+    
+    Returns:
+        List of SearchResult objects with snippets
+    """
+    params = {
+        "action": "query",
+        "list": "search",
+        "srsearch": query,
+        "srlimit": min(limit, 50),
+        "srprop": "snippet|titlesnippet"
+    }
+    
+    data = _make_request(params)
+    
+    results = []
+    for item in data.get("query", {}).get("search", []):
+        # Clean HTML from snippet
+        snippet = re.sub(r'<[^>]+>', '', item.get("snippet", ""))
+        results.append(SearchResult(
+            title=item["title"],
+            url=f"{PAGE_URL}{item['title'].replace(' ', '_')}",
+            snippet=snippet
+        ))
+    
+    return results
+
+
+def get_page_extract(title: str, sentences: int = 5) -> Optional[str]:
+    """
+    Get a plain text extract/summary of a page.
+    
+    Args:
+        title: Page title
+        sentences: Number of sentences to extract
+    
+    Returns:
+        Plain text summary or None if page not found
+    """
+    params = {
+        "action": "query",
+        "titles": title,
+        "prop": "extracts",
+        "exintro": True,  # Only intro section
+        "explaintext": True,  # Plain text, no HTML
+        "exsentences": sentences
+    }
+    
+    data = _make_request(params)
+    pages = data.get("query", {}).get("pages", {})
+    
+    for page_id, page in pages.items():
+        if page_id != "-1":
+            return page.get("extract", "")
+    
     return None
 
 
-def get_latest_snapshot() -> Optional[str]:
-    """Get the latest snapshot version ID."""
-    versions = list_versions()
-    for version in versions:
-        if not re.match(r"^\d+\.\d+(\.\d+)?$", version):
-            return version
+def get_page_content(title: str) -> Optional[PageContent]:
+    """
+    Get full parsed content of a page including sections and categories.
+    
+    Args:
+        title: Page title
+    
+    Returns:
+        PageContent object or None if page not found
+    """
+    params = {
+        "action": "parse",
+        "page": title,
+        "prop": "text|sections|categories",
+        "disabletoc": True
+    }
+    
+    try:
+        data = _make_request(params)
+    except requests.exceptions.HTTPError:
+        return None
+    # Validate response
+    if not data or not isinstance(data, dict):
+        return None
+    if "error" in data:
+        return None
+    
+    parse = data.get("parse", {})
+    
+    # Extract plain text from HTML
+    html = ""
+    if isinstance(parse, dict):
+        html = parse.get("text", {}).get("*", "") if parse.get("text") else ""
+    soup = BeautifulSoup(html, "html.parser")
+    
+    # Remove unwanted elements
+    for elem in soup.find_all(["script", "style", "table", "div"]):
+        if elem.get("class") and "infobox" in " ".join(elem.get("class", [])):
+            elem.decompose()
+    
+    # Get text content
+    text = soup.get_text(separator="\n", strip=True)
+    # Clean up excessive whitespace
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    
+    # Extract sections
+    sections = [
+        {"index": s["index"], "level": s["level"], "name": s["line"]}
+        for s in parse.get("sections", [])
+    ]
+    
+    # Extract categories
+    categories = [
+        cat["*"] for cat in parse.get("categories", [])
+    ]
+    
+    return PageContent(
+        title=parse.get("title", title),
+        pageid=parse.get("pageid", 0),
+        url=f"{PAGE_URL}{title.replace(' ', '_')}",
+        extract=text[:5000],  # Limit size
+        sections=sections,
+        categories=categories
+    )
+
+
+def get_page_sections(title: str) -> List[Dict[str, Any]]:
+    """
+    Get the section structure of a page.
+    
+    Args:
+        title: Page title
+    
+    Returns:
+        List of section dictionaries with index, level, and name
+    """
+    params = {
+        "action": "parse",
+        "page": title,
+        "prop": "sections"
+    }
+    
+    try:
+        data = _make_request(params)
+    except:
+        return []
+    
+    return [
+        {"index": s["index"], "level": int(s["level"]), "name": s["line"]}
+        for s in data.get("parse", {}).get("sections", [])
+    ]
+
+
+def get_category_members(category: str, limit: int = 50) -> List[PageInfo]:
+    """
+    Get all pages in a category.
+    
+    Args:
+        category: Category name (with or without "Category:" prefix)
+        limit: Maximum number of results
+    
+    Returns:
+        List of PageInfo objects
+    """
+    if not category.startswith("Category:"):
+        category = f"Category:{category}"
+    
+    params = {
+        "action": "query",
+        "list": "categorymembers",
+        "cmtitle": category,
+        "cmlimit": min(limit, 500),
+        "cmtype": "page"  # Only pages, not subcategories
+    }
+    
+    data = _make_request(params)
+    
+    return [
+        PageInfo(
+            pageid=item["pageid"],
+            title=item["title"],
+            url=f"{PAGE_URL}{item['title'].replace(' ', '_')}"
+        )
+        for item in data.get("query", {}).get("categorymembers", [])
+    ]
+
+
+def get_commands(limit: int = 100) -> List[CommandInfo]:
+    """
+    Get list of all Minecraft commands from the wiki.
+    
+    Args:
+        limit: Maximum number of commands to return
+    
+    Returns:
+        List of CommandInfo objects
+    """
+    pages = get_category_members("Commands", limit=limit)
+    
+    commands = []
+    for page in pages:
+        # Filter to only actual command pages
+        if page.title.startswith("Commands/"):
+            cmd_name = page.title.replace("Commands/", "")
+            commands.append(CommandInfo(
+                name=cmd_name,
+                url=page.url
+            ))
+    
+    return commands
+
+
+def get_command_info(command: str) -> Optional[str]:
+    """
+    Get information about a specific command.
+    
+    Args:
+        command: Command name (e.g., "execute", "give")
+    
+    Returns:
+        Plain text description of the command
+    """
+    # Try with Commands/ prefix first
+    extract = get_page_extract(f"Commands/{command}", sentences=10)
+    if extract:
+        return extract
+    
+    # Try without prefix
+    return get_page_extract(command, sentences=10)
+
+
+def get_version_info(version: str) -> Optional[str]:
+    """
+    Get information about a specific Minecraft version.
+    
+    Args:
+        version: Version string (e.g., "1.20.1", "Java Edition 1.20")
+    
+    Returns:
+        Plain text description of the version
+    """
+    # Try different page name formats
+    candidates = [
+        f"Java Edition {version}",
+        version,
+        f"Bedrock Edition {version}"
+    ]
+    
+    for title in candidates:
+        extract = get_page_extract(title, sentences=10)
+        if extract:
+            return extract
+    
     return None
 
 
-# ============================================================================
-# Generator Functions
-# ============================================================================
-
-def list_generators() -> List[str]:
+def get_block_info(block: str) -> Optional[PageContent]:
     """
-    Get list of all available generator IDs.
-    
-    Returns:
-        List of generator IDs
-        Example: ["loot_table", "recipe", "worldgen_biome", ...]
-    """
-    return list(GENERATORS.keys())
-
-
-def get_generator_url(generator_id: str) -> str:
-    """
-    Get the Misode website URL for a generator.
+    Get information about a specific block.
     
     Args:
-        generator_id: Generator ID (e.g., "loot_table")
-        
+        block: Block name (e.g., "Stone", "Diamond Ore")
+    
     Returns:
-        Full URL to generator page
+        PageContent object with block information
     """
-    path = GENERATORS.get(generator_id, generator_id.replace("_", "-"))
-    return f"{MISODE_SITE}/{path}/"
+    return get_page_content(block)
 
 
-# ============================================================================
-# Data Access Functions - Core MCP Methods
-# ============================================================================
-
-def _get_data_url(version_id: str, data_type: str) -> str:
-    """Construct URL for data file in mcmeta repository."""
-    return f"{GITHUB_RAW}/{version_id}-summary/data/{data_type}/data.min.json"
-
-
-def get_data(version_id: str, data_type: str) -> Dict[str, Any]:
+def get_item_info(item: str) -> Optional[PageContent]:
     """
-    Get data for a specific type and version.
+    Get information about a specific item.
     
     Args:
-        version_id: Minecraft version (e.g., "1.21.11")
-        data_type: Data type (e.g., "loot_table", "recipe", "worldgen/biome")
-        
+        item: Item name (e.g., "Diamond Sword", "Ender Pearl")
+    
     Returns:
-        Dictionary mapping entry IDs to their JSON data
+        PageContent object with item information
     """
-    url = _get_data_url(version_id, data_type)
-    return _request(url)
+    return get_page_content(item)
 
 
-def search_data(version_id: str, data_type: str, query: str) -> List[str]:
+def get_mob_info(mob: str) -> Optional[PageContent]:
     """
-    Search for entries matching a query.
+    Get information about a specific mob/entity.
     
     Args:
-        version_id: Minecraft version
-        data_type: Data type (e.g., "loot_table")
-        query: Search query (case-insensitive)
-        
+        mob: Mob name (e.g., "Creeper", "Enderman")
+    
     Returns:
-        List of matching entry IDs
+        PageContent object with mob information
     """
-    try:
-        data = get_data(version_id, data_type)
-        query = query.lower()
-        return [k for k in data.keys() if query in k.lower()]
-    except Exception:
-        return []
+    return get_page_content(mob)
 
 
-# ============================================================================
-# Registry Functions
-# ============================================================================
-
-def get_registries(version_id: str) -> Dict[str, List[str]]:
+def get_random_pages(count: int = 5) -> List[PageInfo]:
     """
-    Get all registry data for a version.
+    Get random wiki pages.
     
     Args:
-        version_id: Minecraft version
-        
-    Returns:
-        Dictionary mapping registry names to entry ID lists
-    """
-    url = f"{GITHUB_RAW}/{version_id}-summary/registries/data.min.json"
-    return _request(url)
-
-
-def list_registry_names(version_id: str) -> List[str]:
-    """Get list of all registry names for a version."""
-    return list(get_registries(version_id).keys())
-
-
-def get_registry(version_id: str, registry_name: str) -> List[str]:
-    """
-    Get entries from a specific registry.
-    
-    Args:
-        version_id: Minecraft version
-        registry_name: Registry name (e.g., "item", "block")
-        
-    Returns:
-        List of entry IDs
-    """
-    registries = get_registries(version_id)
-    return registries.get(registry_name, [])
-
-
-# ============================================================================
-# Block State Functions
-# ============================================================================
-
-def get_block_states(version_id: str) -> Dict[str, Any]:
-    """Get all block state definitions."""
-    url = f"{GITHUB_RAW}/{version_id}-summary/blocks/data.min.json"
-    return _request(url)
-
-
-def get_block_state(version_id: str, block_id: str) -> Optional[Dict[str, Any]]:
-    """Get state definition for a specific block."""
-    states = get_block_states(version_id)
-    clean_id = block_id.replace("minecraft:", "")
-    return states.get(clean_id)
-
-
-# ============================================================================
-# Specific Data Type Helpers
-# ============================================================================
-
-def get_loot_tables(version_id: str) -> Dict[str, Any]:
-    """Get all loot tables."""
-    return get_data(version_id, "loot_table")
-
-
-def get_recipes(version_id: str) -> Dict[str, Any]:
-    """Get all recipes."""
-    return get_data(version_id, "recipe")
-
-
-def get_advancements(version_id: str) -> Dict[str, Any]:
-    """Get all advancements."""
-    return get_data(version_id, "advancement")
-
-
-def get_predicates(version_id: str) -> Dict[str, Any]:
-    """Get all predicates."""
-    return get_data(version_id, "predicate")
-
-
-def get_item_modifiers(version_id: str) -> Dict[str, Any]:
-    """Get all item modifiers."""
-    return get_data(version_id, "item_modifier")
-
-
-def get_damage_types(version_id: str) -> Dict[str, Any]:
-    """Get all damage types."""
-    return get_data(version_id, "damage_type")
-
-
-def get_biomes(version_id: str) -> Dict[str, Any]:
-    """Get all biomes."""
-    return get_data(version_id, "worldgen/biome")
-
-
-def get_structures(version_id: str) -> Dict[str, Any]:
-    """Get all structures."""
-    return get_data(version_id, "worldgen/structure")
-
-
-def get_configured_features(version_id: str) -> Dict[str, Any]:
-    """Get all configured features."""
-    return get_data(version_id, "worldgen/configured_feature")
-
-
-def get_placed_features(version_id: str) -> Dict[str, Any]:
-    """Get all placed features."""
-    return get_data(version_id, "worldgen/placed_feature")
-
-
-# ============================================================================
-# Changelog Functions
-# ============================================================================
-
-def list_changelog_releases() -> List[str]:
-    """
-    Get list of release versions that have changelogs.
+        count: Number of random pages to get
     
     Returns:
-        List of release versions (e.g., ["1.21", "1.20.5", ...])
+        List of PageInfo objects
     """
-    try:
-        response = _request(TECHNICAL_CHANGES_API)
-        return [
-            item["name"]
-            for item in response
-            if item["type"] == "dir" and not item["name"].startswith(".")
-        ]
-    except Exception as e:
-        print(f"Error listing changelog releases: {e}")
-        return []
-
-
-def list_changelogs(release: str) -> List[str]:
-    """
-    Get list of version IDs that have changelogs in a release.
+    params = {
+        "action": "query",
+        "list": "random",
+        "rnnamespace": 0,  # Main namespace
+        "rnlimit": min(count, 20)
+    }
     
-    Args:
-        release: Release version (e.g., "1.21")
-        
-    Returns:
-        List of version IDs
-    """
-    try:
-        url = f"{TECHNICAL_CHANGES_API}/{release}"
-        response = _request(url)
-        return [
-            item["name"].replace(".md", "")
-            for item in response
-            if item["type"] == "file" and item["name"].endswith(".md")
-        ]
-    except Exception as e:
-        print(f"Error listing changelogs for {release}: {e}")
-        return []
-
-
-def get_changelog(release: str, version_id: str) -> Optional[str]:
-    """
-    Get changelog content for a specific version.
+    data = _make_request(params)
     
-    Args:
-        release: Release version (e.g., "1.21")
-        version_id: Version ID (e.g., "24w14a")
-        
-    Returns:
-        Markdown content or None
-    """
-    try:
-        url = f"{TECHNICAL_CHANGES_RAW}/{release}/{version_id}.md"
-        return _request(url, json_response=False)
-    except Exception:
+    return [
+        PageInfo(
+            pageid=item["id"],
+            title=item["title"],
+            url=f"{PAGE_URL}{item['title'].replace(' ', '_')}"
+        )
+        for item in data.get("query", {}).get("random", [])
+    ]
+
+
+# ============================================================================
+# Conversion Functions
+# ============================================================================
+
+def search_to_dict(results: List[SearchResult]) -> List[dict]:
+    """Convert SearchResult list to dict list"""
+    return [
+        {"title": r.title, "url": r.url, "snippet": r.snippet}
+        for r in results
+    ]
+
+
+def page_info_to_dict(pages: List[PageInfo]) -> List[dict]:
+    """Convert PageInfo list to dict list"""
+    return [
+        {"pageid": p.pageid, "title": p.title, "url": p.url}
+        for p in pages
+    ]
+
+
+def page_content_to_dict(content: Optional[PageContent]) -> Optional[dict]:
+    """Convert PageContent to dict"""
+    if not content:
         return None
+    return {
+        "title": content.title,
+        "pageid": content.pageid,
+        "url": content.url,
+        "extract": content.extract,
+        "sections": content.sections,
+        "categories": content.categories
+    }
 
 
-def parse_changelog(content: str) -> List[Dict[str, Any]]:
-    """
-    Parse changelog markdown into structured data.
-    
-    Args:
-        content: Markdown content
-        
-    Returns:
-        List of entries with tags and descriptions
-    """
-    entries = []
-    for line in content.strip().split('\n'):
-        line = line.strip()
-        if not line or '|' not in line:
-            continue
-        
-        tags_part, description = line.split('|', 1)
-        tags = [tag.strip() for tag in tags_part.split() if tag.strip()]
-        
-        entries.append({
-            "tags": tags,
-            "description": description.strip()
-        })
-    
-    return entries
-
-
-# ============================================================================
-# Sitemap Functions
-# ============================================================================
-
-def get_sitemap() -> List[str]:
-    """Get all URLs from the sitemap."""
-    try:
-        content = _request(GITHUB_SITEMAP, json_response=False)
-        return [line.strip() for line in content.split('\n') if line.strip()]
-    except Exception as e:
-        print(f"Error fetching sitemap: {e}")
-        return []
-
-
-# ============================================================================
-# Utility Functions for MCP Agents
-# ============================================================================
-
-def get_entry(version_id: str, data_type: str, entry_id: str) -> Optional[Dict[str, Any]]:
-    """
-    Get a specific entry by ID.
-    
-    Args:
-        version_id: Minecraft version
-        data_type: Data type (e.g., "loot_table")
-        entry_id: Entry ID (e.g., "chests/ancient_city")
-        
-    Returns:
-        Entry data or None
-    """
-    try:
-        data = get_data(version_id, data_type)
-        return data.get(entry_id)
-    except Exception:
-        return None
-
-
-def list_entries(version_id: str, data_type: str) -> List[str]:
-    """
-    Get list of all entry IDs for a data type.
-    
-    Args:
-        version_id: Minecraft version
-        data_type: Data type
-        
-    Returns:
-        List of entry IDs
-    """
-    try:
-        data = get_data(version_id, data_type)
-        return list(data.keys())
-    except Exception:
-        return []
-
-
-def filter_entries(version_id: str, data_type: str, prefix: str) -> List[str]:
-    """
-    Get entries that start with a prefix.
-    
-    Args:
-        version_id: Minecraft version
-        data_type: Data type
-        prefix: Prefix to filter by (e.g., "chests/")
-        
-    Returns:
-        List of matching entry IDs
-    """
-    entries = list_entries(version_id, data_type)
-    return [e for e in entries if e.startswith(prefix)]
+def commands_to_dict(commands: List[CommandInfo]) -> List[dict]:
+    """Convert CommandInfo list to dict list"""
+    return [
+        {"name": c.name, "url": c.url}
+        for c in commands
+    ]
 
 
 # ============================================================================
@@ -488,89 +476,47 @@ def filter_entries(version_id: str, data_type: str, prefix: str) -> List[str]:
 # ============================================================================
 
 if __name__ == "__main__":
-    print("=== Misode Data Pack Generators Client - MCP Optimized ===\n")
+    print("=" * 60)
+    print("Minecraft Wiki API Client Tests")
+    print("=" * 60)
     
-    # Test versions
-    print("1. Testing list_versions()...")
-    try:
-        versions = list_versions()
-        print(f"   Found {len(versions)} versions")
-        if versions:
-            print(f"   First 5: {versions[:5]}")
-        
-        latest = get_latest_release()
-        print(f"   Latest release: {latest}")
-        test_version = latest or "1.21.4"
-    except Exception as e:
-        print(f"   Error: {e}")
-        test_version = "1.21.4"
+    # Test 1: Search
+    print("\n🔍 Test 1: Search for 'creeper'")
+    results = search("creeper", limit=5)
+    for r in results:
+        print(f"  - {r.title}: {r.url}")
     
-    print(f"\n2. Using version: {test_version}")
+    # Test 2: Full-text search
+    print("\n🔍 Test 2: Full-text search for 'explosion damage'")
+    results = search_fulltext("explosion damage", limit=3)
+    for r in results:
+        print(f"  - {r.title}")
+        print(f"    Snippet: {r.snippet[:100]}...")
     
-    # Test generators
-    print("\n3. Testing list_generators()...")
-    generators = list_generators()
-    print(f"   Found {len(generators)} generators")
-    print(f"   Sample: {generators[:5]}")
+    # Test 3: Get page extract
+    print("\n📄 Test 3: Get extract for 'Creeper'")
+    extract = get_page_extract("Creeper", sentences=3)
+    if extract:
+        print(f"  {extract[:300]}...")
     
-    # Test registries
-    print("\n4. Testing get_registries()...")
-    try:
-        registries = get_registries(test_version)
-        print(f"   Found {len(registries)} registries")
-        registry_names = list(registries.keys())[:5]
-        print(f"   Sample: {registry_names}")
-    except Exception as e:
-        print(f"   Error: {e}")
+    # Test 4: Get commands
+    print("\n⌨️ Test 4: Get Minecraft commands")
+    commands = get_commands(limit=10)
+    for cmd in commands[:10]:
+        print(f"  - /{cmd.name}")
     
-    # Test loot tables
-    print("\n5. Testing get_loot_tables()...")
-    try:
-        loot_tables = get_loot_tables(test_version)
-        print(f"   Found {len(loot_tables)} loot tables")
-        
-        chest_tables = filter_entries(test_version, "loot_table", "chests/")
-        print(f"   Chest loot tables: {len(chest_tables)}")
-        print(f"   Sample: {chest_tables[:3]}")
-    except Exception as e:
-        print(f"   Error: {e}")
+    # Test 5: Get category members
+    print("\n📁 Test 5: Get blocks category (first 5)")
+    blocks = get_category_members("Blocks", limit=5)
+    for b in blocks:
+        print(f"  - {b.title}")
     
-    # Test search
-    print("\n6. Testing search_data()...")
-    try:
-        results = search_data(test_version, "loot_table", "diamond")
-        print(f"   Found {len(results)} results for 'diamond'")
-        if results:
-            print(f"   Results: {results[:5]}")
-    except Exception as e:
-        print(f"   Error: {e}")
+    # Test 6: Get version info
+    print("\n🎮 Test 6: Get version info for '1.20'")
+    version = get_version_info("1.20")
+    if version:
+        print(f"  {version[:200]}...")
     
-    # Test recipes
-    print("\n7. Testing get_recipes()...")
-    try:
-        recipes = get_recipes(test_version)
-        print(f"   Found {len(recipes)} recipes")
-        
-        diamond_recipes = search_data(test_version, "recipe", "diamond")
-        print(f"   Diamond recipes: {len(diamond_recipes)}")
-        print(f"   Sample: {diamond_recipes[:5]}")
-    except Exception as e:
-        print(f"   Error: {e}")
-    
-    # Test changelogs
-    print("\n8. Testing changelog functions...")
-    try:
-        releases = list_changelog_releases()
-        print(f"   Found {len(releases)} release folders")
-        print(f"   Sample: {releases[:5]}")
-        
-        if releases:
-            test_release = releases[0]
-            changelogs = list_changelogs(test_release)
-            print(f"   Changelogs in {test_release}: {len(changelogs)}")
-            if changelogs:
-                print(f"   Sample: {changelogs[:3]}")
-    except Exception as e:
-        print(f"   Error: {e}")
-    
-    print("\n=== All tests completed! ===")
+    print("\n" + "=" * 60)
+    print("✅ All tests completed!")
+    print("=" * 60)

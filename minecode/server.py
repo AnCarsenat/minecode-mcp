@@ -377,7 +377,100 @@ TOOLS = [
             },
             "required": ["version"]
         }
-    )
+    ),
+    # Additional Minecraft Wiki tools
+    Tool(
+        name="get_wiki_page_content",
+        description="Get full page content for a Minecraft Wiki page.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "description": "Page title"}
+            },
+            "required": ["title"]
+        }
+    ),
+    Tool(
+        name="get_wiki_command_info",
+        description="Get detailed command documentation from Minecraft Wiki.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "command": {"type": "string", "description": "Command name"}
+            },
+            "required": ["command"]
+        }
+    ),
+    Tool(
+        name="get_wiki_random",
+        description="Get random wiki pages.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "count": {"type": "integer", "description": "Number of random pages"}
+            },
+            "required": []
+        }
+    ),
+    # Additional Misode tools
+    Tool(
+        name="misode_list_versions",
+        description="List available Misode/Minecraft versions.",
+        inputSchema={"type": "object", "properties": {}, "required": []}
+    ),
+    Tool(
+        name="misode_get_data",
+        description="Get raw Misode data for a version and data type.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "version": {"type": "string"},
+                "data_type": {"type": "string"}
+            },
+            "required": ["version", "data_type"]
+        }
+    ),
+    Tool(
+        name="misode_search_data",
+        description="Search Misode data for a query",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "version": {"type": "string"},
+                "data_type": {"type": "string"},
+                "query": {"type": "string"}
+            },
+            "required": ["version", "data_type", "query"]
+        }
+    ),
+    # Additional Spyglass convenience tools
+    Tool(
+        name="spyglass_get_items",
+        description="Get list of items for a version",
+        inputSchema={
+            "type": "object",
+            "properties": {"version": {"type": "string"}},
+            "required": ["version"]
+        }
+    ),
+    Tool(
+        name="spyglass_search_registry",
+        description="Search a Spyglass registry for a query",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "version": {"type": "string"},
+                "registry": {"type": "string"},
+                "query": {"type": "string"}
+            },
+            "required": ["version", "registry", "query"]
+        }
+    ),
+    Tool(
+        name="spyglass_get_mcdoc_symbols",
+        description="Get vanilla mcdoc symbols from Spyglass",
+        inputSchema={"type": "object", "properties": {}, "required": []}
+    ),
 ]
 
 
@@ -661,17 +754,16 @@ def handle_spyglass_get_commands(version: str, command: str = None) -> dict:
 def handle_misode_get_generators(category: str = "all") -> dict:
     """Handle misode_get_generators tool"""
     try:
-        generators = misode.get_available_generators()
-        
-        # Filter by category if specified
+        # misode provides `list_generators()` and `get_generator_url()`
+        gen_ids = misode.list_generators()
+        generators = [{"id": gid, "url": misode.get_generator_url(gid)} for gid in gen_ids]
+
+        # Filter by category is not implemented in misode; keep signature but ignore unknown categories
         if category != "all":
-            generators = [g for g in generators if g.get("category") == category]
-        
-        return {
-            "success": True,
-            "count": len(generators),
-            "generators": generators
-        }
+            # return empty if category filtering requested (no mapping available)
+            generators = [g for g in generators if False]
+
+        return {"success": True, "count": len(generators), "generators": generators}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -679,18 +771,22 @@ def handle_misode_get_generators(category: str = "all") -> dict:
 def handle_misode_get_presets(version: str, generator_type: str, search: str = None) -> dict:
     """Handle misode_get_presets tool"""
     try:
+        # misode exposes `get_data` and `search_data` for generator contents
         if search:
-            presets = misode.search_presets(version, generator_type, search)
+            presets = misode.search_data(version, generator_type, search)
+            # search_data returns a list of matching keys
+            presets_list = presets
         else:
-            presets = misode.get_preset_names(version, generator_type)
-        
+            data = misode.get_data(version, generator_type) or {}
+            presets_list = list(data.keys())
+
         return {
             "success": True,
             "version": version,
             "generator_type": generator_type,
             "generator_url": misode.get_generator_url(generator_type),
-            "count": len(presets),
-            "presets": presets[:100]  # Limit to 100
+            "count": len(presets_list),
+            "presets": presets_list[:100]
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -699,18 +795,13 @@ def handle_misode_get_presets(version: str, generator_type: str, search: str = N
 def handle_misode_get_preset_data(version: str, generator_type: str, preset_id: str) -> dict:
     """Handle misode_get_preset_data tool"""
     try:
-        preset = misode.get_preset(version, generator_type, preset_id)
-        
+        data = misode.get_data(version, generator_type) or {}
+        preset = data.get(preset_id)
+
         if not preset:
             return {"success": False, "error": f"Preset '{preset_id}' not found"}
-        
-        return {
-            "success": True,
-            "version": version,
-            "generator_type": generator_type,
-            "preset_id": preset_id,
-            "data": preset
-        }
+
+        return {"success": True, "version": version, "generator_type": generator_type, "preset_id": preset_id, "data": preset}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -719,11 +810,12 @@ def handle_misode_get_loot_tables(version: str, category: str = "all", search: s
     """Handle misode_get_loot_tables tool"""
     try:
         if search:
-            tables = misode.search_loot_tables(version, search)
+            tables = misode.search_data(version, "loot_table", search)
         else:
-            tables = misode.get_preset_names(version, "loot_table")
-        
-        # Filter by category
+            data = misode.get_data(version, "loot_table") or {}
+            tables = list(data.keys())
+
+        # Filter by category using known prefixes
         if category != "all":
             prefix_map = {
                 "blocks": "blocks/",
@@ -734,9 +826,10 @@ def handle_misode_get_loot_tables(version: str, category: str = "all", search: s
             }
             prefix = prefix_map.get(category, "")
             tables = [t for t in tables if t.startswith(prefix)]
-        
+
         # Get counts by category
-        all_tables = misode.get_preset_names(version, "loot_table")
+        all_data = misode.get_data(version, "loot_table") or {}
+        all_tables = list(all_data.keys())
         categories = {
             "blocks": len([t for t in all_tables if t.startswith("blocks/")]),
             "chests": len([t for t in all_tables if t.startswith("chests/")]),
@@ -744,7 +837,7 @@ def handle_misode_get_loot_tables(version: str, category: str = "all", search: s
             "archaeology": len([t for t in all_tables if t.startswith("archaeology/")]),
             "gameplay": len([t for t in all_tables if t.startswith("gameplay/")]),
         }
-        
+
         return {
             "success": True,
             "version": version,
@@ -761,13 +854,17 @@ def handle_misode_get_recipes(version: str, recipe_type: str = "all", search: st
     """Handle misode_get_recipes tool"""
     try:
         if search:
-            recipes = misode.search_recipes(version, search)
-            recipe_data = {r: misode.get_recipe(version, r) for r in recipes[:20]}
+            recipes = misode.search_data(version, "recipe", search)
+            recipe_data = {}
+            data = misode.get_data(version, "recipe") or {}
+            for r in recipes[:20]:
+                if r in data:
+                    recipe_data[r] = data[r]
         else:
-            recipe_data = misode.get_recipes(version)
+            recipe_data = misode.get_data(version, "recipe") or {}
             recipes = list(recipe_data.keys())
-        
-        # Filter by recipe type
+
+        # Filter by recipe type if requested
         if recipe_type != "all":
             filtered = {}
             for name, data in recipe_data.items():
@@ -775,14 +872,87 @@ def handle_misode_get_recipes(version: str, recipe_type: str = "all", search: st
                     filtered[name] = data
             recipe_data = filtered
             recipes = list(filtered.keys())
-        
-        return {
-            "success": True,
-            "version": version,
-            "recipe_type": recipe_type,
-            "count": len(recipes),
-            "recipes": recipes[:100]
-        }
+
+        return {"success": True, "version": version, "recipe_type": recipe_type, "count": len(recipes), "recipes": recipes[:100]}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+# ============================================================================
+# Additional Minecraft Wiki / Misode / Spyglass Handlers
+# ============================================================================
+
+def handle_get_wiki_page_content(title: str) -> dict:
+    """Return full page content (structured) for a wiki page"""
+    try:
+        content = minecraftwiki.get_page_content(title)
+        if not content:
+            return {"success": False, "error": f"Page '{title}' not found or parse failed"}
+        return {"success": True, "title": title, "content": minecraftwiki.page_content_to_dict(content)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def handle_get_wiki_command_info(command: str) -> dict:
+    try:
+        info = minecraftwiki.get_command_info(command)
+        return {"success": True, "command": command, "info": info}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def handle_get_wiki_random(count: int = 5) -> dict:
+    try:
+        pages = minecraftwiki.get_random_pages(count=count)
+        return {"success": True, "count": len(pages), "pages": minecraftwiki.page_info_to_dict(pages)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def handle_misode_list_versions() -> dict:
+    try:
+        versions = misode.list_versions()
+        return {"success": True, "count": len(versions), "versions": versions}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def handle_misode_get_data(version: str, data_type: str) -> dict:
+    try:
+        data = misode.get_data(version, data_type)
+        return {"success": True, "version": version, "data_type": data_type, "count": len(data) if isinstance(data, dict) else None, "data": data}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def handle_misode_search_data(version: str, data_type: str, query: str) -> dict:
+    try:
+        results = misode.search_data(version, data_type, query)
+        return {"success": True, "version": version, "data_type": data_type, "query": query, "results": results}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def handle_spyglass_get_items(version: str) -> dict:
+    try:
+        items = spyglass.get_items(version)
+        return {"success": True, "version": version, "count": len(items), "items": items[:200]}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def handle_spyglass_search_registry(version: str, registry: str, query: str) -> dict:
+    try:
+        results = spyglass.search_registry(version, registry, query)
+        return {"success": True, "version": version, "registry": registry, "query": query, "results": results}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def handle_spyglass_get_mcdoc_symbols() -> dict:
+    try:
+        symbols = spyglass.get_mcdoc_symbols()
+        return {"success": True, "count": len(symbols), "symbols": symbols}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -879,6 +1049,24 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 recipe_type=arguments.get("recipe_type", "all"),
                 search=arguments.get("search")
             )
+        elif name == "get_wiki_page_content":
+            result = handle_get_wiki_page_content(arguments["title"])
+        elif name == "get_wiki_command_info":
+            result = handle_get_wiki_command_info(arguments["command"])
+        elif name == "get_wiki_random":
+            result = handle_get_wiki_random(arguments.get("count", 5))
+        elif name == "misode_list_versions":
+            result = handle_misode_list_versions()
+        elif name == "misode_get_data":
+            result = handle_misode_get_data(arguments["version"], arguments["data_type"])
+        elif name == "misode_search_data":
+            result = handle_misode_search_data(arguments["version"], arguments["data_type"], arguments["query"])
+        elif name == "spyglass_get_items":
+            result = handle_spyglass_get_items(arguments["version"])
+        elif name == "spyglass_search_registry":
+            result = handle_spyglass_search_registry(arguments["version"], arguments["registry"], arguments["query"])
+        elif name == "spyglass_get_mcdoc_symbols":
+            result = handle_spyglass_get_mcdoc_symbols()
         else:
             raise ValueError(f"Unknown tool: {name}")
         
