@@ -1,12 +1,45 @@
+# Virtual Environment
 venv/
+.venv/
+ENV/
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
 *.egg-info/
+*.egg
+
+# Build
 dist/
 build/
+*.tar.gz
+*.whl
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
 .env
+.env.local
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Logs
 *.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Development files (not needed in package)
+client.py
