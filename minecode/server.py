@@ -524,13 +524,21 @@ def handle_get_project_version(datapack_path: str) -> dict:
             # Can be a range [min, max] or a single integer
             if isinstance(supported_formats, list):
                 if len(supported_formats) == 2:
-                    min_format, max_format = supported_formats
-                    multiversion_info = {
-                        "min_format": min_format,
-                        "max_format": max_format,
-                        "min_version": PACK_FORMAT_MAP.get(min_format, {}).get("description", "Unknown"),
-                        "max_version": PACK_FORMAT_MAP.get(max_format, {}).get("description", "Unknown")
-                    }
+                    # Validate that elements are integers
+                    if all(isinstance(x, int) for x in supported_formats):
+                        min_format, max_format = supported_formats
+                        multiversion_info = {
+                            "min_format": min_format,
+                            "max_format": max_format,
+                            "min_version": PACK_FORMAT_MAP.get(min_format, {}).get("description", "Unknown"),
+                            "max_version": PACK_FORMAT_MAP.get(max_format, {}).get("description", "Unknown")
+                        }
+                    else:
+                        # Elements are not all integers
+                        multiversion_info = {
+                            "raw_value": supported_formats,
+                            "note": "supported_formats list elements must be integers"
+                        }
                 else:
                     # Handle unexpected list format
                     multiversion_info = {
