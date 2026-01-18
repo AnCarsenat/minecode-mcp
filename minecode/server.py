@@ -6,7 +6,6 @@ Provides tools for searching wiki info, checking syntax, and other utilities
 
 import asyncio
 import json
-import os
 from pathlib import Path
 
 from mcp.server import Server
@@ -52,6 +51,19 @@ PACK_FORMAT_MAP = {
     # Latest snapshot format
     94: {"versions": ["25w03a+"], "description": "1.21.5+ Snapshots"},
 }
+
+
+def _get_version_description(pack_format: int) -> str:
+    """
+    Get version description for a given pack format.
+    
+    Args:
+        pack_format: The pack format number
+        
+    Returns:
+        Version description string, or "Unknown" if not found
+    """
+    return PACK_FORMAT_MAP.get(pack_format, {}).get("description", "Unknown")
 
 
 # Tool definitions
@@ -475,7 +487,31 @@ def handle_validate_datapack(datapack_path: str, mc_version: str) -> dict:
 
 
 def handle_get_project_version(datapack_path: str) -> dict:
-    """Handle get_project_version tool - reads pack.mcmeta and returns version info"""
+    """
+    Handle get_project_version tool - reads pack.mcmeta and returns version info.
+    
+    This function reads the pack.mcmeta file from a Minecraft datapack directory
+    and extracts version information including pack format, supported Minecraft
+    versions, and multiversion support details if present.
+    
+    Args:
+        datapack_path: Path to the datapack folder containing pack.mcmeta
+        
+    Returns:
+        dict: A dictionary containing:
+            - success (bool): Whether the operation succeeded
+            - path (str): Resolved absolute path to the datapack (on success)
+            - pack_format (int): Pack format number (on success)
+            - minecraft_versions (list): List of supported Minecraft versions (on success)
+            - version_description (str): Human-readable version description (on success)
+            - description (str): Datapack description from pack.mcmeta (on success)
+            - multiversion_support (dict): Multiversion support info if present (optional)
+            - note (str): Additional notes about multiversion support (optional)
+            - error (str): Error message (on failure)
+            
+    Raises:
+        No exceptions are raised; all errors are returned in the result dictionary
+    """
     try:
         # Resolve path
         pack_path = Path(datapack_path).resolve()
@@ -530,8 +566,8 @@ def handle_get_project_version(datapack_path: str) -> dict:
                         multiversion_info = {
                             "min_format": min_format,
                             "max_format": max_format,
-                            "min_version": PACK_FORMAT_MAP.get(min_format, {}).get("description", "Unknown"),
-                            "max_version": PACK_FORMAT_MAP.get(max_format, {}).get("description", "Unknown")
+                            "min_version": _get_version_description(min_format),
+                            "max_version": _get_version_description(max_format)
                         }
                     else:
                         # Elements are not all integers
@@ -548,7 +584,7 @@ def handle_get_project_version(datapack_path: str) -> dict:
             elif isinstance(supported_formats, int):
                 multiversion_info = {
                     "format": supported_formats,
-                    "version": PACK_FORMAT_MAP.get(supported_formats, {}).get("description", "Unknown")
+                    "version": _get_version_description(supported_formats)
                 }
             else:
                 # Handle unexpected type
