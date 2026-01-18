@@ -119,6 +119,7 @@ Add to `claude_desktop_config.json`:
 |------|-------------|
 | `hello_world` | Test connectivity |
 | `get_minecraft_version` | Get version info |
+| `get_project_version` | Read pack.mcmeta and return version info |
 | `validate_datapack` | Validate datapack structure |
 | `list_commands` | List commands for a version |
 
