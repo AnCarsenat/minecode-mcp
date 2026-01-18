@@ -18,6 +18,9 @@ from .scrappers import minecraftwiki
 from .scrappers import spyglass
 from .scrappers import misode
 
+# Import launcher support
+from .launchers import LauncherManager
+
 
 # Initialize MCP Server
 server = Server("minecode-server")
@@ -25,19 +28,23 @@ server = Server("minecode-server")
 
 # Pack format to Minecraft version mapping
 # Based on https://minecraft.wiki/w/Pack_format
+# Note: 1.21.11 is the first version supporting datapacks with pack_format
 PACK_FORMAT_MAP = {
-    # 1.20.5+ versions
-    48: {"versions": ["1.21.2", "1.21.3"], "description": "1.21.2-1.21.3"},
-    41: {"versions": ["1.21", "1.21.1"], "description": "1.21-1.21.1"},
-    34: {"versions": ["1.20.5", "1.20.6"], "description": "1.20.5-1.20.6"},
+    # Latest versions (with minor version support)
+    75: {"versions": ["1.21.11"], "description": "1.21.11"},
+    69: {"versions": ["1.21.9", "1.21.10"], "description": "1.21.9-1.21.10"},
+    64: {"versions": ["1.21.7", "1.21.8"], "description": "1.21.7-1.21.8"},
+    61: {"versions": ["1.21.4"], "description": "1.21.4"},
+    57: {"versions": ["1.21.2", "1.21.3"], "description": "1.21.2-1.21.3"},
+    48: {"versions": ["1.21", "1.21.1"], "description": "1.21-1.21.1"},
     # 1.20.x versions
+    41: {"versions": ["1.20.5", "1.20.6"], "description": "1.20.5-1.20.6"},
     26: {"versions": ["1.20.3", "1.20.4"], "description": "1.20.3-1.20.4"},
     18: {"versions": ["1.20.2"], "description": "1.20.2"},
     15: {"versions": ["1.20", "1.20.1"], "description": "1.20-1.20.1"},
     # 1.19.x versions
     12: {"versions": ["1.19.4"], "description": "1.19.4"},
-    11: {"versions": ["1.19.3"], "description": "1.19.3"},
-    10: {"versions": ["1.19", "1.19.1", "1.19.2"], "description": "1.19-1.19.2"},
+    10: {"versions": ["1.19", "1.19.1", "1.19.2", "1.19.3"], "description": "1.19-1.19.3"},
     # 1.18.x versions
     9: {"versions": ["1.18.2"], "description": "1.18.2"},
     8: {"versions": ["1.18", "1.18.1"], "description": "1.18-1.18.1"},
@@ -46,10 +53,8 @@ PACK_FORMAT_MAP = {
     # 1.16.x versions
     6: {"versions": ["1.16.2", "1.16.3", "1.16.4", "1.16.5"], "description": "1.16.2-1.16.5"},
     5: {"versions": ["1.16", "1.16.1"], "description": "1.16-1.16.1"},
-    # Older versions
-    4: {"versions": ["1.15", "1.15.1", "1.15.2"], "description": "1.15-1.15.2"},
-    # Latest snapshot format
-    94: {"versions": ["1.21.5+"], "description": "1.21.5+ Snapshots"},
+    # Older versions (datapacks not available)
+    4: {"versions": ["1.13", "1.13.1", "1.13.2", "1.14", "1.14.1", "1.14.2", "1.14.3", "1.14.4"], "description": "1.13-1.14.4"},
 }
 
 
@@ -434,6 +439,84 @@ TOOLS = [
                 }
             },
             "required": ["version"]
+        }
+    ),
+    # Launcher Tools
+    Tool(
+        name="get_available_launchers",
+        description="Get list of available Minecraft launchers detected on the system (Vanilla, MultiMC, Prism, CurseForge, etc.)",
+        inputSchema={
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    ),
+    Tool(
+        name="get_launcher_instances",
+        description="Get all game instances/profiles from a specific launcher",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "launcher_type": {
+                    "type": "string",
+                    "description": "Type of launcher (vanilla, multimc, prism, curseforge, all)"
+                }
+            },
+            "required": ["launcher_type"]
+        }
+    ),
+    Tool(
+        name="get_launcher_info",
+        description="Get detailed information about a Minecraft launcher",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "launcher_type": {
+                    "type": "string",
+                    "description": "Type of launcher (vanilla, multimc, prism, curseforge)"
+                }
+            },
+            "required": ["launcher_type"]
+        }
+    ),
+    Tool(
+        name="get_minecraft_logs",
+        description="Get the latest Minecraft logs from a game instance",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "launcher_type": {
+                    "type": "string",
+                    "description": "Type of launcher (vanilla, multimc, prism, curseforge)"
+                },
+                "instance_name": {
+                    "type": "string",
+                    "description": "Name of the game instance/profile"
+                },
+                "max_lines": {
+                    "type": "integer",
+                    "description": "Maximum number of log lines to return (default: all)"
+                }
+            },
+            "required": ["launcher_type", "instance_name"]
+        }
+    ),
+    Tool(
+        name="clear_minecraft_logs",
+        description="Clear logs for a specific game instance",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "launcher_type": {
+                    "type": "string",
+                    "description": "Type of launcher (vanilla, multimc, prism, curseforge)"
+                },
+                "instance_name": {
+                    "type": "string",
+                    "description": "Name of the game instance/profile"
+                }
+            },
+            "required": ["launcher_type", "instance_name"]
         }
     )
 ]
@@ -980,6 +1063,193 @@ def handle_misode_get_recipes(version: str, recipe_type: str = "all", search: st
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+# Launcher handler functions
+_launcher_manager = None
+
+def _get_launcher_manager() -> LauncherManager:
+    """Get or create the launcher manager singleton"""
+    global _launcher_manager
+    if _launcher_manager is None:
+        _launcher_manager = LauncherManager()
+    return _launcher_manager
+
+
+def handle_get_available_launchers() -> dict:
+    """Handle get_available_launchers tool"""
+    manager = _get_launcher_manager()
+    launchers = manager.get_available_launchers()
+    launcher_infos = manager.get_launcher_infos()
+    
+    result = {
+        "success": True,
+        "available_launchers": launchers,
+        "count": len(launchers),
+        "details": {}
+    }
+    
+    for launcher_type, info in launcher_infos.items():
+        result["details"][launcher_type] = {
+            "name": info.name,
+            "version": info.version,
+            "path": str(info.path),
+            "launcher_type": info.launcher_type
+        }
+    
+    return result
+
+
+def handle_get_launcher_instances(launcher_type: str) -> dict:
+    """Handle get_launcher_instances tool"""
+    manager = _get_launcher_manager()
+    
+    if launcher_type == "all":
+        all_instances = manager.get_all_instances()
+        result = {
+            "success": True,
+            "launcher_type": "all",
+            "instances": all_instances,
+            "total_instances": sum(len(v) for v in all_instances.values())
+        }
+    else:
+        launcher = manager.get_launcher(launcher_type)
+        if not launcher:
+            return {
+                "success": False,
+                "error": f"Launcher '{launcher_type}' not found. Available: {manager.get_available_launchers()}"
+            }
+        
+        try:
+            instances = launcher.get_instances()
+            result = {
+                "success": True,
+                "launcher_type": launcher_type,
+                "instances": instances,
+                "count": len(instances)
+            }
+        except Exception as e:
+            result = {
+                "success": False,
+                "error": f"Error getting instances: {str(e)}"
+            }
+    
+    return result
+
+
+def handle_get_launcher_info(launcher_type: str) -> dict:
+    """Handle get_launcher_info tool"""
+    manager = _get_launcher_manager()
+    launcher = manager.get_launcher(launcher_type)
+    
+    if not launcher:
+        return {
+            "success": False,
+            "error": f"Launcher '{launcher_type}' not found. Available: {manager.get_available_launchers()}"
+        }
+    
+    try:
+        info = launcher.get_launcher_info()
+        return {
+            "success": True,
+            "launcher_type": launcher_type,
+            "name": info.name,
+            "version": info.version,
+            "path": str(info.path),
+            "java_executable": str(info.java_executable) if info.java_executable else None
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Error getting launcher info: {str(e)}"
+        }
+
+
+def handle_get_minecraft_logs(launcher_type: str, instance_name: str, max_lines: int = None) -> dict:
+    """Handle get_minecraft_logs tool"""
+    manager = _get_launcher_manager()
+    launcher = manager.get_launcher(launcher_type)
+    
+    if not launcher:
+        return {
+            "success": False,
+            "error": f"Launcher '{launcher_type}' not found. Available: {manager.get_available_launchers()}"
+        }
+    
+    try:
+        logs = launcher.get_logs(instance_name)
+        
+        if logs is None:
+            return {
+                "success": False,
+                "error": f"No logs found for instance '{instance_name}'",
+                "launcher_type": launcher_type,
+                "instance_name": instance_name
+            }
+        
+        # Truncate logs if max_lines is specified
+        if max_lines:
+            lines = logs.split('\n')
+            if len(lines) > max_lines:
+                logs = '\n'.join(lines[-max_lines:])
+                truncated = True
+            else:
+                truncated = False
+        else:
+            truncated = False
+        
+        return {
+            "success": True,
+            "launcher_type": launcher_type,
+            "instance_name": instance_name,
+            "logs": logs,
+            "truncated": truncated,
+            "lines": len(logs.split('\n'))
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Error retrieving logs: {str(e)}",
+            "launcher_type": launcher_type,
+            "instance_name": instance_name
+        }
+
+
+def handle_clear_minecraft_logs(launcher_type: str, instance_name: str) -> dict:
+    """Handle clear_minecraft_logs tool"""
+    manager = _get_launcher_manager()
+    launcher = manager.get_launcher(launcher_type)
+    
+    if not launcher:
+        return {
+            "success": False,
+            "error": f"Launcher '{launcher_type}' not found. Available: {manager.get_available_launchers()}"
+        }
+    
+    try:
+        success = launcher.clear_logs(instance_name)
+        
+        if success:
+            return {
+                "success": True,
+                "launcher_type": launcher_type,
+                "instance_name": instance_name,
+                "message": f"Logs cleared for instance '{instance_name}'"
+            }
+        else:
+            return {
+                "success": False,
+                "error": f"Failed to clear logs for instance '{instance_name}'",
+                "launcher_type": launcher_type,
+                "instance_name": instance_name
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Error clearing logs: {str(e)}",
+            "launcher_type": launcher_type,
+            "instance_name": instance_name
+        }
 
 
 # Register tool handler

@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Test minecode-mcp",
+			"type": "shell",
+			"command": "pytest",
+			"group": "test"
+		},
+		{
+			"label": "Test minecode-mcp",
+			"type": "shell",
+			"command": "C:/Users/antoi/Desktop/Informatique/2024-2025/HakatonEcole42/MineCode/venv/Scripts/python.exe -m pytest",
+			"group": "test"
+		},
+		{
+			"label": "Test minecode-mcp",
+			"type": "shell",
+			"command": "C:/Users/antoi/Desktop/Informatique/2024-2025/HakatonEcole42/MineCode/venv/Scripts/python.exe -m pytest",
+			"group": "test"
+		}
+	]
+}
