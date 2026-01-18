@@ -12,11 +12,12 @@ MineCode is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) s
 
 ## ✨ Features
 
-- 🔧 **19 MCP Tools** for Minecraft development
+- 🔧 **21 MCP Tools** for Minecraft development
 - 📚 **Minecraft Wiki** integration (search, pages, categories)
 - 🐛 **Mojira** bug tracker search
 - 🔍 **Spyglass API** (registries, commands, block states)
 - 🎨 **Misode Generators** (loot tables, recipes, worldgen presets)
+- 📋 **Minecraft Logs** management (read and clear logs for troubleshooting)
 
 ---
 
@@ -121,6 +122,8 @@ Add to `claude_desktop_config.json`:
 | `get_minecraft_version` | Get version info |
 | `validate_datapack` | Validate datapack structure |
 | `list_commands` | List commands for a version |
+| `get_minecraft_logs` | Get Minecraft logs for troubleshooting |
+| `clear_minecraft_logs` | Clear or backup Minecraft logs |
 
 ---
 
