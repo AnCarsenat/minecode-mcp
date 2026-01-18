@@ -905,11 +905,14 @@ def handle_get_minecraft_logs(
                 "error": f"Failed to read log file: {str(e)}"
             }
         
+        # Track total lines before filtering
+        total_lines = len(log_content)
+        
         # Apply filter if specified
         if filter:
             log_content = [line for line in log_content if filter.lower() in line.lower()]
         
-        # Limit lines
+        # Limit lines (apply after filtering to get the requested number of filtered lines)
         lines = min(lines, 1000)  # Cap at 1000 lines
         if len(log_content) > lines:
             log_content = log_content[-lines:]
@@ -924,7 +927,7 @@ def handle_get_minecraft_logs(
             "log_path": str(log_path),
             "file_size_bytes": file_size,
             "file_modified": file_modified,
-            "total_lines": len(log_content),
+            "total_lines": total_lines,
             "lines_returned": len(log_content),
             "filtered": filter is not None,
             "filter_term": filter,
