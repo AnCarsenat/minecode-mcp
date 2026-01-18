@@ -395,8 +395,7 @@ TOOLS = [
                 },
                 "log_file": {
                     "type": "string",
-                    "description": "Specific log file to read (default: 'latest.log')",
-                    "enum": ["latest.log", "debug.log"]
+                    "description": "Specific log file to read (default: 'latest.log'). Can be 'latest.log', 'debug.log', or any dated log file name."
                 },
                 "lines": {
                     "type": "integer",
@@ -1021,7 +1020,8 @@ def handle_clear_minecraft_logs(
                 try:
                     log_file.unlink()
                     deleted_count += 1
-                except Exception:
+                except (PermissionError, OSError):
+                    # Skip files that can't be deleted (permission issues, etc.)
                     pass
             
             return {
