@@ -49,7 +49,7 @@ PACK_FORMAT_MAP = {
     # Older versions
     4: {"versions": ["1.15", "1.15.1", "1.15.2"], "description": "1.15-1.15.2"},
     # Latest snapshot format
-    94: {"versions": ["25w03a+"], "description": "1.21.5+ Snapshots"},
+    94: {"versions": ["1.21.5+"], "description": "1.21.5+ Snapshots"},
 }
 
 
@@ -606,7 +606,7 @@ def handle_get_project_version(datapack_path: str) -> dict:
         if multiversion_info:
             result["multiversion_support"] = multiversion_info
             if "note" not in multiversion_info:
-                result["note"] = "This datapack uses multiversion support tricks (supported_formats)"
+                result["note"] = "This datapack declares multiversion compatibility (supported_formats)"
         
         return result
         
