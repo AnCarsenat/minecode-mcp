@@ -8,11 +8,12 @@
 
 MineCode is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that gives AI assistants like **GitHub Copilot** and **Claude** real-time access to Minecraft data, documentation, and datapack generators.
 
+![alt text](assets/readme/example3.png)
 ---
 
 ## ✨ Features
 
-- 🔧 **19 MCP Tools** for Minecraft development
+- 🔧 **27 MCP Tools** for Minecraft development
 - 📚 **Minecraft Wiki** integration (search, pages, categories)
 - 🐛 **Mojira** bug tracker search
 - 🔍 **Spyglass API** (registries, commands, block states)
@@ -32,18 +33,21 @@ pip install minecode-mcp
 
 ### VS Code (GitHub Copilot)
 
-Add to **User Settings** (`Ctrl+Shift+P` → "Preferences: Open User Settings (JSON)"):
+Add to **User Settings** (`Ctrl+Shift+P` → "MCP: Open User Configuration"):
 
 ```json
 {
-  "mcp": {
-    "servers": {
-      "minecode": {
-        "type": "stdio",
-        "command": "minecode"
-      }
-    }
-  }
+	"servers": {
+		"minecode": {
+			"type": "stdio",
+			"command": "py",
+			"args": [
+				"-m",
+				"minecode.server"
+			]
+		}
+	},
+	"inputs": []
 }
 ```
 
@@ -51,12 +55,17 @@ Or create `.vscode/mcp.json` in your workspace:
 
 ```json
 {
-  "servers": {
-    "minecode": {
-      "type": "stdio", 
-      "command": "minecode"
-    }
-  }
+	"servers": {
+		"minecode": {
+			"type": "stdio",
+			"command": "py",
+			"args": [
+				"-m",
+				"minecode.server"
+			]
+		}
+	},
+	"inputs": []
 }
 ```
 
@@ -91,6 +100,9 @@ Add to `claude_desktop_config.json`:
 | `get_wiki_page` | Get page content and summary |
 | `get_wiki_commands` | List all Minecraft commands |
 | `get_wiki_category` | Get pages in a category |
+| `get_wiki_page_content` | Get full page content for a wiki page |
+| `get_wiki_command_info` | Get detailed command documentation from the wiki |
+| `get_wiki_random` | Get random wiki pages |
 
 ### Mojira Bug Tracker
 | Tool | Description |
@@ -104,6 +116,9 @@ Add to `claude_desktop_config.json`:
 | `spyglass_get_registries` | Get registry entries (items, blocks, entities) |
 | `spyglass_get_block_states` | Get block state properties |
 | `spyglass_get_commands` | Get command syntax trees |
+| `spyglass_get_items` | Get list of items for a version |
+| `spyglass_search_registry` | Search a Spyglass registry for a query |
+| `spyglass_get_mcdoc_symbols` | Get vanilla mcdoc symbols from Spyglass |
 
 ### Misode Generators
 | Tool | Description |
@@ -113,6 +128,9 @@ Add to `claude_desktop_config.json`:
 | `misode_get_preset_data` | Get full JSON for a preset |
 | `misode_get_loot_tables` | Get loot tables by category |
 | `misode_get_recipes` | Get recipes with filtering |
+| `misode_list_versions` | List available Misode/Minecraft versions |
+| `misode_get_data` | Get raw Misode data for a version and data type |
+| `misode_search_data` | Search Misode data for a query |
 
 ### Utility
 | Tool | Description |
@@ -144,7 +162,7 @@ Add to `claude_desktop_config.json`:
 minecode-mcp/
 ├── minecode/
 │   ├── __init__.py
-│   ├── server.py          # MCP server with 19 tools
+│   ├── server.py          # MCP server with 27 tools
 │   └── scrappers/
 │       ├── minecraftwiki.py
 │       ├── mojira.py
