@@ -2,6 +2,7 @@
   "name": "minecode-release",
   "displayName": "MineCode Release",
   "publisher": "yourname",
+  "description": "Run the MineCode MCP server and release workflow from VS Code",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.60.0"
@@ -54,5 +55,16 @@
       }
     }
   },
-  "categories": ["Other"]
+  "scripts": {
+    "package": "npx vsce package",
+    "publish": "npx vsce publish --pat $VSCE_TOKEN || npx vsce publish -p $VSCE_TOKEN"
+  },
+  "devDependencies": {
+    "vsce": "^2.10.0"
+  },
+  "categories": ["Other"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AnCarsenat/minecode-mcp"
+  }
 }

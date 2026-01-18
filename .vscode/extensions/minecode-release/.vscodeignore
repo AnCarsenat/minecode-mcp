@@ -1,0 +1,9 @@
+.git
+node_modules
+dist
+.vscode
+**/*.map
+**/README.md
+**/CHANGELOG.md
+**/*.tgz
+**/*.vsix
