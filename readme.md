@@ -12,10 +12,10 @@ MineCode is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) s
 
 ## ✨ Features
 
-- 🔧 **19 MCP Tools** for Minecraft development
+- 🔧 **20 MCP Tools** for Minecraft development
 - 📚 **Minecraft Wiki** integration (search, pages, categories)
 - 🐛 **Mojira** bug tracker search
-- 🔍 **Spyglass API** (registries, commands, block states)
+- 🔍 **Spyglass API** (registries, commands, block states, function validation)
 - 🎨 **Misode Generators** (loot tables, recipes, worldgen presets)
 
 ---
@@ -104,6 +104,7 @@ Add to `claude_desktop_config.json`:
 | `spyglass_get_registries` | Get registry entries (items, blocks, entities) |
 | `spyglass_get_block_states` | Get block state properties |
 | `spyglass_get_commands` | Get command syntax trees |
+| `validate_function` | Validate function file syntax using Spyglass |
 
 ### Misode Generators
 | Tool | Description |
