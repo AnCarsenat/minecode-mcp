@@ -1,6 +1,8 @@
 # 🎮 MineCode MCP
 
 **MCP Server for Minecraft Datapack Development**
+Written for Hackaton about CMP sponsored by dustt, alpic, etc. Please star if you would like to help out.
+Please write issues for me to fix.
 
 [![PyPI](https://img.shields.io/pypi/v/minecode-mcp)](https://pypi.org/project/minecode-mcp/)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://python.org)
