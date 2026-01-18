@@ -6,6 +6,8 @@ Provides tools for searching wiki info, checking syntax, and other utilities
 
 import asyncio
 import json
+import os
+from pathlib import Path
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -68,6 +70,20 @@ TOOLS = [
                 }
             },
             "required": ["datapack_path", "mc_version"]
+        }
+    ),
+    Tool(
+        name="get_project_version",
+        description="Read pack.mcmeta file and return the pack format version. This helps determine which Minecraft version(s) the datapack supports.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "datapack_path": {
+                    "type": "string",
+                    "description": "Path to the datapack folder containing pack.mcmeta"
+                }
+            },
+            "required": ["datapack_path"]
         }
     ),
     Tool(
@@ -426,6 +442,125 @@ def handle_validate_datapack(datapack_path: str, mc_version: str) -> dict:
         "warnings": [],
         "errors": []
     }
+
+
+def handle_get_project_version(datapack_path: str) -> dict:
+    """Handle get_project_version tool - reads pack.mcmeta and returns version info"""
+    # Pack format to Minecraft version mapping
+    # Based on https://minecraft.wiki/w/Pack_format
+    PACK_FORMAT_MAP = {
+        # 1.20.5+ versions
+        48: {"versions": ["1.21.2", "1.21.3"], "description": "1.21.2-1.21.3"},
+        41: {"versions": ["1.21", "1.21.1"], "description": "1.21-1.21.1"},
+        34: {"versions": ["1.20.5", "1.20.6"], "description": "1.20.5-1.20.6"},
+        # 1.20.x versions
+        26: {"versions": ["1.20.3", "1.20.4"], "description": "1.20.3-1.20.4"},
+        18: {"versions": ["1.20.2"], "description": "1.20.2"},
+        15: {"versions": ["1.20", "1.20.1"], "description": "1.20-1.20.1"},
+        # 1.19.x versions
+        12: {"versions": ["1.19.4"], "description": "1.19.4"},
+        11: {"versions": ["1.19.3"], "description": "1.19.3"},
+        10: {"versions": ["1.19", "1.19.1", "1.19.2"], "description": "1.19-1.19.2"},
+        # 1.18.x versions
+        9: {"versions": ["1.18.2"], "description": "1.18.2"},
+        8: {"versions": ["1.18", "1.18.1"], "description": "1.18-1.18.1"},
+        # 1.17.x versions
+        7: {"versions": ["1.17", "1.17.1"], "description": "1.17-1.17.1"},
+        # 1.16.x versions
+        6: {"versions": ["1.16.2", "1.16.3", "1.16.4", "1.16.5"], "description": "1.16.2-1.16.5"},
+        5: {"versions": ["1.16", "1.16.1"], "description": "1.16-1.16.1"},
+        # Older versions
+        4: {"versions": ["1.15", "1.15.1", "1.15.2"], "description": "1.15-1.15.2"},
+        # Latest snapshot format (as of Jan 2026)
+        94: {"versions": ["25w03a+"], "description": "1.21.5+ Snapshots"},
+    }
+    
+    try:
+        # Resolve path
+        pack_path = Path(datapack_path).resolve()
+        pack_mcmeta_path = pack_path / "pack.mcmeta"
+        
+        # Check if path exists
+        if not pack_path.exists():
+            return {
+                "success": False,
+                "error": f"Datapack path does not exist: {datapack_path}"
+            }
+        
+        # Check if pack.mcmeta exists
+        if not pack_mcmeta_path.exists():
+            return {
+                "success": False,
+                "error": f"pack.mcmeta not found in {datapack_path}"
+            }
+        
+        # Read and parse pack.mcmeta
+        with open(pack_mcmeta_path, 'r', encoding='utf-8') as f:
+            pack_data = json.load(f)
+        
+        # Extract pack info
+        pack_info = pack_data.get("pack", {})
+        pack_format = pack_info.get("pack_format")
+        description = pack_info.get("description", "")
+        
+        if pack_format is None:
+            return {
+                "success": False,
+                "error": "pack_format not found in pack.mcmeta"
+            }
+        
+        # Get version info from mapping
+        version_info = PACK_FORMAT_MAP.get(pack_format, {
+            "versions": ["Unknown"],
+            "description": "Unknown version (unsupported pack format)"
+        })
+        
+        # Check for supported_formats (multiversion support)
+        supported_formats = pack_info.get("supported_formats")
+        multiversion_info = None
+        
+        if supported_formats:
+            # Can be a range [min, max] or a single integer
+            if isinstance(supported_formats, list) and len(supported_formats) == 2:
+                min_format, max_format = supported_formats
+                multiversion_info = {
+                    "min_format": min_format,
+                    "max_format": max_format,
+                    "min_version": PACK_FORMAT_MAP.get(min_format, {}).get("description", "Unknown"),
+                    "max_version": PACK_FORMAT_MAP.get(max_format, {}).get("description", "Unknown")
+                }
+            elif isinstance(supported_formats, int):
+                multiversion_info = {
+                    "format": supported_formats,
+                    "version": PACK_FORMAT_MAP.get(supported_formats, {}).get("description", "Unknown")
+                }
+        
+        result = {
+            "success": True,
+            "path": str(pack_path),
+            "pack_format": pack_format,
+            "minecraft_versions": version_info["versions"],
+            "version_description": version_info["description"],
+            "description": description
+        }
+        
+        # Add multiversion support info if present
+        if multiversion_info:
+            result["multiversion_support"] = multiversion_info
+            result["note"] = "This datapack uses multiversion support tricks (supported_formats)"
+        
+        return result
+        
+    except json.JSONDecodeError as e:
+        return {
+            "success": False,
+            "error": f"Invalid JSON in pack.mcmeta: {str(e)}"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Error reading pack.mcmeta: {str(e)}"
+        }
 
 
 def handle_search_wiki(query: str, limit: int = 10, fulltext: bool = False) -> dict:
@@ -798,6 +933,8 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             result = handle_get_minecraft_version(arguments["version"])
         elif name == "validate_datapack":
             result = handle_validate_datapack(arguments["datapack_path"], arguments["mc_version"])
+        elif name == "get_project_version":
+            result = handle_get_project_version(arguments["datapack_path"])
         elif name == "search_wiki":
             result = handle_search_wiki(
                 arguments["query"],
