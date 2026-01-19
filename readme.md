@@ -93,7 +93,7 @@ Add to `claude_desktop_config.json`:
 
 ---
 
-## ⚙️ Developpment
+## ⚙️ Development
 
 Follow these steps to set up a local development environment, run the MCP server, and publish releases.
 - Development environment:
