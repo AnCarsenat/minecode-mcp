@@ -254,6 +254,21 @@ minecode-mcp/
 
 ---
 
+## 🐍 Plans
+
+- [ ] Getting logs using prism's api for log sharing https://mclo.gs
+If impossible, perform a search for where minecraft assets are generally located at
+
+- [ ] Better spyglass tools
+
+- [ ] Better multiversion support
+
+- [ ] Pre-prompts to increase agent accuracy
+
+
+
+---
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE)
