@@ -368,7 +368,7 @@ def get_block_info(block: str) -> Optional[PageContent]:
     Args:
         block: Block name (e.g., "Stone", "Diamond Ore")
     
-    Returns:
+    Returns:    
         PageContent object with block information
     """
     return get_page_content(block)

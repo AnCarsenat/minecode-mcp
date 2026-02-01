@@ -69,51 +69,6 @@ def get_versions() -> List[Dict[str, Any]]:
     return _make_request("/mcje/versions")
 
 
-def get_latest_release() -> Optional[Dict[str, Any]]:
-    """
-    Get the latest stable release version.
-    
-    Returns:
-        Version object for the latest release, or None if not found
-    """
-    versions = get_versions()
-    for version in versions:
-        if version.get("type") == "release" and version.get("stable"):
-            return version
-    return None
-
-
-def get_latest_snapshot() -> Optional[Dict[str, Any]]:
-    """
-    Get the latest snapshot version.
-    
-    Returns:
-        Version object for the latest snapshot, or None if not found
-    """
-    versions = get_versions()
-    for version in versions:
-        if version.get("type") == "snapshot":
-            return version
-    return None
-
-
-def get_version_info(version_id: str) -> Optional[Dict[str, Any]]:
-    """
-    Get information about a specific version.
-    
-    Args:
-        version_id: Version ID (e.g., "1.21", "24w14a")
-        
-    Returns:
-        Version object or None if not found
-    """
-    versions = get_versions()
-    for version in versions:
-        if version.get("id") == version_id:
-            return version
-    return None
-
-
 # ============================================================================
 # Block States Endpoint
 # ============================================================================

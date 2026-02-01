@@ -1,0 +1,6 @@
+
+{
+	"preprompt_path": "minecode/preprompts/assistant_preprompt.txt",
+	"preprompt_enabled": true,
+	"description": "Central config for MineCode MCP. Contains path to assistant pre-prompt and feature flags."
+}

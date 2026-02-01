@@ -1,0 +1,13 @@
+{
+  "servers": [
+    {
+      "name": "minecode-debug",
+      "command": "${command:python.interpreterPath}",
+      "args": ["-m", "minecode.server"],
+      "transport": "stdio",
+      "cwd": "${workspaceFolder}",
+      "autoStart": false,
+      "description": "Start MineCode MCP server for workspace (stdio transport)."
+    }
+  ]
+}
