@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "minecode-mcp"
-version = "0.1.5"
+version = "0.1.6"
 description = "MCP Server for Minecraft datapack development with wiki, Spyglass, Misode, and Mojira integrations"
 readme = "readme.md"
 license = "MIT"
@@ -47,6 +47,7 @@ include = [
     "LICENSE",
     "example/",
 ]
+
 
 
 
