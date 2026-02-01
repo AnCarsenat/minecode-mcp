@@ -21,6 +21,39 @@ from .scrappers import misode
 # Initialize MCP Server
 server = Server("minecode-server")
 
+# Load central configuration and assistant preprompt (if enabled)
+from pathlib import Path
+
+_pkg_dir = Path(__file__).resolve().parent
+_config_file = _pkg_dir / "config" / "config.json"
+
+# attach default_preprompt to server so other modules can access it
+server.default_preprompt = None
+
+def _load_preprompt_from_config():
+    try:
+        if _config_file.exists():
+            cfg = json.loads(_config_file.read_text(encoding="utf-8"))
+            preprompt_enabled = cfg.get("preprompt_enabled", False)
+            preprompt_path = cfg.get("preprompt_path")
+            if preprompt_enabled and preprompt_path:
+                pp_file = (_pkg_dir / preprompt_path).resolve()
+                if pp_file.exists():
+                    server.default_preprompt = pp_file.read_text(encoding="utf-8")
+                    print(f"Loaded assistant preprompt from {pp_file}")
+    except Exception as e:
+        print(f"Failed loading preprompt from config: {e}")
+
+
+_load_preprompt_from_config()
+
+def get_preprompt_messages():
+    if server.default_preprompt:
+        return [{"role": "system", "content": server.default_preprompt}]
+    return []
+
+server.get_preprompt_messages = get_preprompt_messages
+
 
 # Tool definitions
 TOOLS = [
@@ -47,9 +80,13 @@ TOOLS = [
                 "version": {
                     "type": "string",
                     "description": "Minecraft version (e.g., 1.20.1, latest)"
+                },
+                "datapack_path": {
+                    "type": "string",
+                    "description": "Path to a datapack folder containing pack.mcmeta to infer version"
                 }
             },
-            "required": ["version"]
+            "required": []
         }
     ),
     Tool(
@@ -482,30 +519,62 @@ def handle_hello_world(name: str = None) -> str:
     return "Hello, World! Welcome to MineCode - Your Minecraft Datapack Development Assistant"
 
 
-def handle_get_minecraft_version(version: str) -> dict:
-    """Handle get_minecraft_version tool"""
-    # Simulated version info
-    versions = {
-        "1.20.1": {
-            "release_date": "2023-12-07",
-            "snapshot": False,
-            "features": ["Decorated pots", "Armor trims", "Smithing templates"]
-        },
-        "1.20": {
-            "release_date": "2023-06-07",
-            "snapshot": False,
-            "features": ["Cherry logs", "Painting variants", "Camel mob"]
-        },
-        "latest": {
-            "release_date": "2024-01-18",
-            "snapshot": False,
-            "version": "1.20.4"
-        }
-    }
-    
-    if version in versions:
-        return {"success": True, "data": versions[version]}
-    return {"success": False, "error": f"Version {version} not found in database"}
+def handle_get_minecraft_version(version: str = None, datapack_path: str = None) -> dict:
+    """Handle get_minecraft_version tool.
+
+    If `datapack_path` is provided, attempt to read `pack.mcmeta` and infer
+    the pack_format, then use `misode` metadata to find matching Minecraft
+    versions. If `version` is provided, return the version info from `misode`.
+    """
+    # If a datapack path is provided, try to read pack.mcmeta and infer versions
+    if datapack_path:
+        from pathlib import Path
+        try:
+            p = Path(datapack_path)
+            # allow passing either the folder or the direct path to pack.mcmeta
+            pp = p / "pack.mcmeta" if p.is_dir() else p
+            if not pp.exists():
+                return {"success": False, "error": f"pack.mcmeta not found at {pp}"}
+
+            import json as _json
+            content = _json.loads(pp.read_text(encoding="utf-8"))
+            pack = content.get("pack") or {}
+            pack_format = pack.get("pack_format")
+            if pack_format is None:
+                return {"success": False, "error": "pack_format not found in pack.mcmeta"}
+
+            # Find versions in misode that match this data_pack_version
+            try:
+                candidates = []
+                for vid in misode.list_versions():
+                    info = misode.get_version_info(vid) or {}
+                    dpv = info.get("data_pack_version") or info.get("dataPackVersion") or info.get("pack_format")
+                    if dpv is None:
+                        continue
+                    # compare as ints/strings
+                    try:
+                        if int(dpv) == int(pack_format):
+                            candidates.append({"version": vid, "data_pack_version": dpv})
+                    except Exception:
+                        if str(dpv) == str(pack_format):
+                            candidates.append({"version": vid, "data_pack_version": dpv})
+
+                if candidates:
+                    return {"success": True, "pack_format": pack_format, "matches": candidates}
+                return {"success": False, "pack_format": pack_format, "matches": [], "note": "No matching versions found in misode metadata"}
+            except Exception as e:
+                return {"success": False, "error": f"Error querying misode metadata: {e}"}
+        except Exception as e:
+            return {"success": False, "error": f"Failed reading pack.mcmeta: {e}"}
+
+    # Fallback: if a version string is provided, try to get info from misode
+    if version:
+        info = misode.get_version_info(version)
+        if info:
+            return {"success": True, "version": version, "info": info}
+        return {"success": False, "error": f"Version {version} not found in misode database"}
+
+    return {"success": False, "error": "Either `version` or `datapack_path` must be provided"}
 
 
 def handle_validate_datapack(datapack_path: str, mc_version: str) -> dict:
@@ -965,7 +1034,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         if name == "hello_world":
             result = handle_hello_world(arguments.get("name"))
         elif name == "get_minecraft_version":
-            result = handle_get_minecraft_version(arguments["version"])
+            result = handle_get_minecraft_version(arguments.get("version"), arguments.get("datapack_path"))
         elif name == "validate_datapack":
             result = handle_validate_datapack(arguments["datapack_path"], arguments["mc_version"])
         elif name == "search_wiki":

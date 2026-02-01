@@ -1,0 +1,5 @@
+{
+  "default_preprompt": "minecode/preprompts/assistant_preprompt.txt",
+  "enabled": true,
+  "description": "Path to the default assistant pre-prompt used by the MCP server."
+}
