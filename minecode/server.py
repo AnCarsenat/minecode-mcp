@@ -6,6 +6,7 @@ Provides tools for searching wiki info, checking syntax, and other utilities
 
 import asyncio
 import json
+import logging
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -20,6 +21,10 @@ from .scrappers import misode
 
 # Initialize MCP Server
 server = Server("minecode-server")
+
+# logging
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
+logger = logging.getLogger("minecode.server")
 
 # Load central configuration and assistant preprompt (if enabled)
 from pathlib import Path
@@ -40,9 +45,9 @@ def _load_preprompt_from_config():
                 pp_file = (_pkg_dir / preprompt_path).resolve()
                 if pp_file.exists():
                     server.default_preprompt = pp_file.read_text(encoding="utf-8")
-                    print(f"Loaded assistant preprompt from {pp_file}")
+                    logger.info(f"Loaded assistant preprompt from {pp_file}")
     except Exception as e:
-        print(f"Failed loading preprompt from config: {e}")
+        logger.exception("Failed loading preprompt from config")
 
 
 _load_preprompt_from_config()
@@ -1154,15 +1159,22 @@ async def list_tools():
 async def _run():
     """Run the MCP server"""
     async with stdio_server() as (read_stream, write_stream):
-        await server.run(
-            read_stream,
-            write_stream,
-            server.create_initialization_options()
-        )
+        logger.info("MineCode MCP server starting (stdio mode)")
+        logger.info(f"Registering {len(TOOLS)} tools")
+        try:
+            await server.run(
+                read_stream,
+                write_stream,
+                server.create_initialization_options()
+            )
+        finally:
+            logger.info("MineCode MCP server stopped")
 
 
 def main():
     """Entry point for the MCP server"""
+    logger.info("Starting MineCode MCP server (main entry)")
+    logger.info(f"Config file: {_config_file}")
     asyncio.run(_run())
 
 
