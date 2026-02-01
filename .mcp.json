@@ -1,0 +1,9 @@
+{
+  "name": "minecode-debug",
+  "transport": "stdio",
+  "command": "${command:python.interpreterPath}",
+  "args": ["-m", "minecode.server"],
+  "cwd": ".",
+  "env": {},
+  "description": "Configuration for launching the MineCode MCP server via stdio. Use an MCP-capable client or VS Code extension to start/connect."
+}

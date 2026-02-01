@@ -42,10 +42,41 @@ def _load_preprompt_from_config():
             preprompt_enabled = cfg.get("preprompt_enabled", False)
             preprompt_path = cfg.get("preprompt_path")
             if preprompt_enabled and preprompt_path:
-                pp_file = (_pkg_dir / preprompt_path).resolve()
-                if pp_file.exists():
-                    server.default_preprompt = pp_file.read_text(encoding="utf-8")
-                    logger.info(f"Loaded assistant preprompt from {pp_file}")
+                # Try multiple candidate locations for the preprompt path:
+                candidates = []
+                p = Path(preprompt_path)
+                # Absolute path as-given
+                if p.is_absolute():
+                    candidates.append(p)
+
+                # Package-relative (e.g. "preprompts/assistant_preprompt.txt")
+                candidates.append((_pkg_dir / preprompt_path))
+
+                # Workspace/root-relative if the config used "minecode/..." or similar
+                repo_root = _pkg_dir.parent
+                candidates.append(repo_root / preprompt_path)
+
+                # If path contains a nested "minecode/", try the suffix relative to package
+                if "minecode/" in preprompt_path:
+                    suffix = preprompt_path.split("minecode/", 1)[1]
+                    candidates.append(_pkg_dir / suffix)
+
+                found = None
+                for c in candidates:
+                    try:
+                        cc = c.resolve()
+                    except Exception:
+                        cc = c
+                    logger.debug(f"Checking preprompt candidate: {cc}")
+                    if cc.exists():
+                        found = cc
+                        break
+
+                if found:
+                    server.default_preprompt = found.read_text(encoding="utf-8")
+                    logger.info(f"Loaded assistant preprompt from {found}")
+                else:
+                    logger.info(f"Assistant preprompt not found; tried {len(candidates)} locations")
     except Exception as e:
         logger.exception("Failed loading preprompt from config")
 
