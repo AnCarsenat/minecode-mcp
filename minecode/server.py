@@ -26,54 +26,8 @@ server = Server("minecode-server")
 # Tool definitions
 TOOLS = [
     Tool(
-        name="hello_world",
-        description="Returns a simple hello world message",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "Optional name to greet"
-                }
-            },
-            "required": []
-        }
-    ),
-    Tool(
-        name="get_minecraft_version",
-        description="Returns information about a specific Minecraft version",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "version": {
-                    "type": "string",
-                    "description": "Minecraft version (e.g., 1.20.1, latest)"
-                }
-            },
-            "required": ["version"]
-        }
-    ),
-    Tool(
-        name="validate_datapack",
-        description="Validates datapack syntax and structure",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "datapack_path": {
-                    "type": "string",
-                    "description": "Path to the datapack folder"
-                },
-                "mc_version": {
-                    "type": "string",
-                    "description": "Target Minecraft version"
-                }
-            },
-            "required": ["datapack_path", "mc_version"]
-        }
-    ),
-    Tool(
         name="search_wiki",
-        description="Search Minecraft Wiki for pages matching a query. Returns titles, URLs, and snippets.",
+        description="Search Minecraft Wiki for pages matching a query. Use fulltext=true for snippet-based search. Returns titles, URLs, and optional snippets.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -95,7 +49,7 @@ TOOLS = [
     ),
     Tool(
         name="get_wiki_page",
-        description="Get the content and summary of a specific Minecraft Wiki page.",
+        description="Get a short summary and section list of a Minecraft Wiki page. For full content use get_wiki_page_content instead.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -113,7 +67,7 @@ TOOLS = [
     ),
     Tool(
         name="get_wiki_commands",
-        description="Get list of all Minecraft commands from the wiki with their URLs.",
+        description="List all Minecraft commands from the wiki with their URLs. For detailed syntax of one command use get_wiki_command_info.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -127,7 +81,7 @@ TOOLS = [
     ),
     Tool(
         name="get_wiki_category",
-        description="Get all pages in a wiki category (e.g., 'Blocks', 'Items', 'Mobs').",
+        description="List all pages in a Minecraft Wiki category (e.g. 'Blocks', 'Items', 'Mobs', 'Commands').",
         inputSchema={
             "type": "object",
             "properties": {
@@ -144,27 +98,8 @@ TOOLS = [
         }
     ),
     Tool(
-        name="list_commands",
-        description="List all available Minecraft commands for a version",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "version": {
-                    "type": "string",
-                    "description": "Minecraft version (e.g., 1.20.1)"
-                },
-                "category": {
-                    "type": "string",
-                    "description": "Optional: Filter by category (admin, player, etc.)",
-                    "enum": ["all", "admin", "player", "utility"]
-                }
-            },
-            "required": ["version"]
-        }
-    ),
-    Tool(
         name="search_mojira",
-        description="Search Mojira bug tracker for Minecraft issues. Returns Key, URL, Summary, Status, Reporter, Assignee, and Created date.",
+        description="Search the Mojira bug tracker. Returns issue key, URL, summary, status, reporter, assignee, and creation date. Filter by project (MC, MCPE, etc.), status, or resolution.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -198,7 +133,7 @@ TOOLS = [
     # Spyglass API Tools
     Tool(
         name="spyglass_get_versions",
-        description="Get all Minecraft Java Edition versions from Spyglass API. Returns version IDs, names, types (release/snapshot), pack versions, etc.",
+        description="List Minecraft Java Edition versions with their data/resource pack versions. Filter by release or snapshot. Includes latest release & snapshot info.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -217,7 +152,7 @@ TOOLS = [
     ),
     Tool(
         name="spyglass_get_registries",
-        description="Get registry entries (items, blocks, entities, biomes, enchantments, etc.) for a Minecraft version.",
+        description="Get registry entries for a Minecraft version. Supports item, block, entity_type, biome, enchantment, and many more. Use the optional search param to filter results.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -239,7 +174,7 @@ TOOLS = [
     ),
     Tool(
         name="spyglass_get_block_states",
-        description="Get block state properties and default values for a specific block.",
+        description="Get all block state properties (e.g. facing, waterlogged, power) and their default values for a specific block ID.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -257,7 +192,7 @@ TOOLS = [
     ),
     Tool(
         name="spyglass_get_commands",
-        description="Get command tree/syntax information for a Minecraft version from Spyglass API.",
+        description="Get the full command tree/syntax for a Minecraft version. Optionally pass a command name to get its specific argument tree.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -276,7 +211,7 @@ TOOLS = [
     # Misode Data Pack Tools
     Tool(
         name="misode_get_generators",
-        description="Get list of all available data pack generators on Misode's site with URLs.",
+        description="List all available datapack generators from Misode (loot tables, recipes, worldgen, advancements, etc.) with their URLs.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -291,7 +226,7 @@ TOOLS = [
     ),
     Tool(
         name="misode_get_presets",
-        description="Get vanilla presets for a generator type (loot tables, recipes, biomes, etc.).",
+        description="List vanilla preset IDs for a generator type (e.g. 'loot_table', 'recipe', 'worldgen/biome'). Use search to filter. Get full JSON with misode_get_preset_data.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -313,7 +248,7 @@ TOOLS = [
     ),
     Tool(
         name="misode_get_preset_data",
-        description="Get the full JSON data for a specific preset.",
+        description="Get the full vanilla JSON for a specific preset. Use misode_get_presets first to discover available preset IDs.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -335,7 +270,7 @@ TOOLS = [
     ),
     Tool(
         name="misode_get_loot_tables",
-        description="Get loot tables categorized by type (blocks, chests, entities, etc.).",
+        description="List vanilla loot table IDs by category (blocks, chests, entities, archaeology, gameplay). Includes per-category counts.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -358,7 +293,7 @@ TOOLS = [
     ),
     Tool(
         name="misode_get_recipes",
-        description="Get recipes with optional filtering by type.",
+        description="List vanilla recipe IDs with optional filtering by type (crafting_shaped, smelting, stonecutting, etc.) and search query.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -382,7 +317,7 @@ TOOLS = [
     # Additional Minecraft Wiki tools
     Tool(
         name="get_wiki_page_content",
-        description="Get full page content for a Minecraft Wiki page.",
+        description="Get the full structured content of a Minecraft Wiki page (all sections, text, tables). Use get_wiki_page for a quick summary instead.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -393,7 +328,7 @@ TOOLS = [
     ),
     Tool(
         name="get_wiki_command_info",
-        description="Get detailed command documentation from Minecraft Wiki.",
+        description="Get detailed syntax documentation for a specific Minecraft command from the wiki (arguments, permissions, examples).",
         inputSchema={
             "type": "object",
             "properties": {
@@ -402,79 +337,20 @@ TOOLS = [
             "required": ["command"]
         }
     ),
-    Tool(
-        name="get_wiki_random",
-        description="Get random wiki pages.",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "count": {"type": "integer", "description": "Number of random pages"}
-            },
-            "required": []
-        }
-    ),
     # Additional Misode tools
     Tool(
         name="misode_list_versions",
-        description="List available Misode/Minecraft versions.",
+        description="List all Minecraft versions available in the Misode API for datapack data lookups.",
         inputSchema={"type": "object", "properties": {}, "required": []}
     ),
     Tool(
-        name="misode_get_data",
-        description="Get raw Misode data for a version and data type.",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "version": {"type": "string"},
-                "data_type": {"type": "string"}
-            },
-            "required": ["version", "data_type"]
-        }
-    ),
-    Tool(
-        name="misode_search_data",
-        description="Search Misode data for a query",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "version": {"type": "string"},
-                "data_type": {"type": "string"},
-                "query": {"type": "string"}
-            },
-            "required": ["version", "data_type", "query"]
-        }
-    ),
-    # Additional Spyglass convenience tools
-    Tool(
-        name="spyglass_get_items",
-        description="Get list of items for a version",
-        inputSchema={
-            "type": "object",
-            "properties": {"version": {"type": "string"}},
-            "required": ["version"]
-        }
-    ),
-    Tool(
-        name="spyglass_search_registry",
-        description="Search a Spyglass registry for a query",
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "version": {"type": "string"},
-                "registry": {"type": "string"},
-                "query": {"type": "string"}
-            },
-            "required": ["version", "registry", "query"]
-        }
-    ),
-    Tool(
         name="spyglass_get_mcdoc_symbols",
-        description="Get vanilla mcdoc symbols from Spyglass",
+        description="Get vanilla mcdoc type symbols from Spyglass. Useful for understanding NBT/datapack data structures.",
         inputSchema={"type": "object", "properties": {}, "required": []}
     ),
     Tool(
         name="get_logs",
-        description="Get Minecraft instance logs. Supports default launcher, Prism Launcher, and TLauncher. Returns the latest log file content.",
+        description="Get Minecraft instance logs. Auto-detects launcher or specify 'default', 'prism', or 'tlauncher'. For Prism, optionally specify an instance name. Returns the latest log file content with configurable line count.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -503,52 +379,6 @@ TOOLS = [
 
 
 # Tool handlers
-def handle_hello_world(name: str = None) -> str:
-    """Handle hello_world tool"""
-    if name:
-        return f"Hello, {name}! Welcome to MineCode."
-    return "Hello, World! Welcome to MineCode - Your Minecraft Datapack Development Assistant"
-
-
-def handle_get_minecraft_version(version: str) -> dict:
-    """Handle get_minecraft_version tool"""
-    # Simulated version info
-    versions = {
-        "1.20.1": {
-            "release_date": "2023-12-07",
-            "snapshot": False,
-            "features": ["Decorated pots", "Armor trims", "Smithing templates"]
-        },
-        "1.20": {
-            "release_date": "2023-06-07",
-            "snapshot": False,
-            "features": ["Cherry logs", "Painting variants", "Camel mob"]
-        },
-        "latest": {
-            "release_date": "2024-01-18",
-            "snapshot": False,
-            "version": "1.20.4"
-        }
-    }
-    
-    if version in versions:
-        return {"success": True, "data": versions[version]}
-    return {"success": False, "error": f"Version {version} not found in database"}
-
-
-def handle_validate_datapack(datapack_path: str, mc_version: str) -> dict:
-    """Handle validate_datapack tool"""
-    # Simulated validation
-    return {
-        "success": True,
-        "path": datapack_path,
-        "version": mc_version,
-        "status": "valid",
-        "warnings": [],
-        "errors": []
-    }
-
-
 def handle_search_wiki(query: str, limit: int = 10, fulltext: bool = False) -> dict:
     """Handle search_wiki tool using MediaWiki API"""
     try:
@@ -615,27 +445,6 @@ def handle_get_wiki_category(category: str, limit: int = 50) -> dict:
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
-
-
-def handle_list_commands(version: str, category: str = "all") -> dict:
-    """Handle list_commands tool"""
-    # Simulated command list
-    commands = {
-        "1.20.1": {
-            "all": ["/execute", "/give", "/setblock", "/fill", "/function", "/say"],
-            "admin": ["/op", "/stop", "/save-all", "/gamemode", "/difficulty"],
-            "player": ["/say", "/tell", "/give"],
-            "utility": ["/time", "/weather", "/locate", "/seed"]
-        }
-    }
-    
-    version_commands = commands.get(version, {}).get(category, [])
-    return {
-        "version": version,
-        "category": category,
-        "commands": version_commands,
-        "count": len(version_commands)
-    }
 
 
 def handle_search_mojira(
@@ -929,50 +738,10 @@ def handle_get_wiki_command_info(command: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-def handle_get_wiki_random(count: int = 5) -> dict:
-    try:
-        pages = minecraftwiki.get_random_pages(count=count)
-        return {"success": True, "count": len(pages), "pages": minecraftwiki.page_info_to_dict(pages)}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
 def handle_misode_list_versions() -> dict:
     try:
         versions = misode.list_versions()
         return {"success": True, "count": len(versions), "versions": versions}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
-def handle_misode_get_data(version: str, data_type: str) -> dict:
-    try:
-        data = misode.get_data(version, data_type)
-        return {"success": True, "version": version, "data_type": data_type, "count": len(data) if isinstance(data, dict) else None, "data": data}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
-def handle_misode_search_data(version: str, data_type: str, query: str) -> dict:
-    try:
-        results = misode.search_data(version, data_type, query)
-        return {"success": True, "version": version, "data_type": data_type, "query": query, "results": results}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
-def handle_spyglass_get_items(version: str) -> dict:
-    try:
-        items = spyglass.get_items(version)
-        return {"success": True, "version": version, "count": len(items), "items": items[:200]}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
-def handle_spyglass_search_registry(version: str, registry: str, query: str) -> dict:
-    try:
-        results = spyglass.search_registry(version, registry, query)
-        return {"success": True, "version": version, "registry": registry, "query": query, "results": results}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -1007,13 +776,7 @@ def handle_get_logs(launcher: str = None, instance: str = None, lines: int = 100
 async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     """Handle tool calls"""
     try:
-        if name == "hello_world":
-            result = handle_hello_world(arguments.get("name"))
-        elif name == "get_minecraft_version":
-            result = handle_get_minecraft_version(arguments["version"])
-        elif name == "validate_datapack":
-            result = handle_validate_datapack(arguments["datapack_path"], arguments["mc_version"])
-        elif name == "search_wiki":
+        if name == "search_wiki":
             result = handle_search_wiki(
                 arguments["query"],
                 limit=arguments.get("limit", 10),
@@ -1033,8 +796,6 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 arguments["category"],
                 limit=arguments.get("limit", 50)
             )
-        elif name == "list_commands":
-            result = handle_list_commands(arguments["version"], arguments.get("category", "all"))
         elif name == "search_mojira":
             result = handle_search_mojira(
                 query=arguments.get("query"),
@@ -1098,18 +859,8 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             result = handle_get_wiki_page_content(arguments["title"])
         elif name == "get_wiki_command_info":
             result = handle_get_wiki_command_info(arguments["command"])
-        elif name == "get_wiki_random":
-            result = handle_get_wiki_random(arguments.get("count", 5))
         elif name == "misode_list_versions":
             result = handle_misode_list_versions()
-        elif name == "misode_get_data":
-            result = handle_misode_get_data(arguments["version"], arguments["data_type"])
-        elif name == "misode_search_data":
-            result = handle_misode_search_data(arguments["version"], arguments["data_type"], arguments["query"])
-        elif name == "spyglass_get_items":
-            result = handle_spyglass_get_items(arguments["version"])
-        elif name == "spyglass_search_registry":
-            result = handle_spyglass_search_registry(arguments["version"], arguments["registry"], arguments["query"])
         elif name == "spyglass_get_mcdoc_symbols":
             result = handle_spyglass_get_mcdoc_symbols()
         elif name == "get_logs":

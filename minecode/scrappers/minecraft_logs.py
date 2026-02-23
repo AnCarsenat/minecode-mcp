@@ -112,21 +112,25 @@ def find_prism_instance_logs(prism_dir: Path, instance_name: Optional[str] = Non
     instances = {}
     
     if instance_name:
-        # Look for specific instance
-        instance_dir = instances_dir / instance_name / ".minecraft"
-        if instance_dir.exists():
-            logs = find_all_logs(instance_dir)
-            if logs:
-                instances[instance_name] = logs
+        # Look for specific instance (Prism uses "minecraft", some setups use ".minecraft")
+        for subdir in ("minecraft", ".minecraft"):
+            instance_dir = instances_dir / instance_name / subdir
+            if instance_dir.exists():
+                logs = find_all_logs(instance_dir)
+                if logs:
+                    instances[instance_name] = logs
+                break
     else:
         # Find all instances
         for instance_path in instances_dir.iterdir():
             if instance_path.is_dir():
-                minecraft_dir = instance_path / ".minecraft"
-                if minecraft_dir.exists():
-                    logs = find_all_logs(minecraft_dir)
-                    if logs:
-                        instances[instance_path.name] = logs
+                for subdir in ("minecraft", ".minecraft"):
+                    minecraft_dir = instance_path / subdir
+                    if minecraft_dir.exists():
+                        logs = find_all_logs(minecraft_dir)
+                        if logs:
+                            instances[instance_path.name] = logs
+                        break
     
     return instances
 
