@@ -11,6 +11,8 @@ from typing import Dict, List, Optional, Tuple
 
 # Constants
 MAX_LOG_LINES = 1000  # Maximum number of lines to return for safety
+# Unique marker for internal errors that's extremely unlikely to appear in real logs
+_ERROR_MARKER = "<<<MINECODE_ERROR>>>"
 
 
 def get_default_minecraft_dir() -> Path:
@@ -187,8 +189,8 @@ def read_log_file(log_path: Path, lines: Optional[int] = None, tail: bool = Fals
         return "\n".join(selected_lines)
     
     except Exception as e:
-        # Return a clearly marked error string
-        return f"ERROR_READING_FILE: {str(e)}"
+        # Return a clearly marked error string with unique marker
+        return f"{_ERROR_MARKER} {str(e)}"
 
 
 def detect_launcher_type(minecraft_dir: Path) -> str:
@@ -258,7 +260,7 @@ def get_logs(
                         for log_file in log_files[:1]:  # Only get latest log per instance
                             content = read_log_file(log_file, lines, tail)
                             # Check if an error occurred during reading
-                            if content.startswith("ERROR_READING_FILE:"):
+                            if content.startswith(_ERROR_MARKER):
                                 lines_shown = 0
                             else:
                                 lines_shown = calculate_line_count(content)
@@ -282,7 +284,7 @@ def get_logs(
                 if latest_log:
                     content = read_log_file(latest_log, lines, tail)
                     # Check if an error occurred during reading
-                    if content.startswith("ERROR_READING_FILE:"):
+                    if content.startswith(_ERROR_MARKER):
                         lines_shown = 0
                     else:
                         lines_shown = calculate_line_count(content)
@@ -309,7 +311,7 @@ def get_logs(
                     if detected_type == "tlauncher" or launcher == "tlauncher":
                         content = read_log_file(latest_log, lines, tail)
                         # Check if an error occurred during reading
-                        if content.startswith("ERROR_READING_FILE:"):
+                        if content.startswith(_ERROR_MARKER):
                             lines_shown = 0
                         else:
                             lines_shown = calculate_line_count(content)
