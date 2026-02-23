@@ -81,7 +81,8 @@ version\s*=\s*["'][^"']+["']
         $fallback = 'version = "' + $NewVersion + '"'
         $newText = [regex]::Replace($text, $matchPattern, $fallback)
     }
-    Set-Content -Path $Path -Value $newText -Encoding UTF8
+    # Write UTF-8 without BOM (Set-Content -Encoding UTF8 adds a BOM in PS 5.1)
+    [System.IO.File]::WriteAllText($Path, $newText, (New-Object System.Text.UTF8Encoding $false))
 }
 
 if ($Bump) {
