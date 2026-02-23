@@ -16,6 +16,7 @@ from .scrappers import mojira
 from .scrappers import minecraftwiki
 from .scrappers import spyglass
 from .scrappers import misode
+from .scrappers import minecraft_logs
 
 
 # Initialize MCP Server
@@ -470,6 +471,33 @@ TOOLS = [
         name="spyglass_get_mcdoc_symbols",
         description="Get vanilla mcdoc symbols from Spyglass",
         inputSchema={"type": "object", "properties": {}, "required": []}
+    ),
+    Tool(
+        name="get_logs",
+        description="Get Minecraft instance logs. Supports default launcher, Prism Launcher, and TLauncher. Returns the latest log file content.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "launcher": {
+                    "type": "string",
+                    "description": "Launcher type: 'default', 'prism', 'tlauncher', or omit for auto-detect",
+                    "enum": ["default", "prism", "tlauncher"]
+                },
+                "instance": {
+                    "type": "string",
+                    "description": "Instance name (for Prism Launcher only)"
+                },
+                "lines": {
+                    "type": "integer",
+                    "description": "Number of lines to return (default: 100, max: 1000)"
+                },
+                "tail": {
+                    "type": "boolean",
+                    "description": "If true, return last N lines; if false, return first N lines (default: true)"
+                }
+            },
+            "required": []
+        }
     ),
 ]
 
@@ -957,6 +985,23 @@ def handle_spyglass_get_mcdoc_symbols() -> dict:
         return {"success": False, "error": str(e)}
 
 
+def handle_get_logs(launcher: str = None, instance: str = None, lines: int = 100, tail: bool = True) -> dict:
+    """Handle get_logs tool - retrieve Minecraft logs from various launchers"""
+    try:
+        result = minecraft_logs.get_logs(
+            launcher=launcher,
+            instance=instance,
+            lines=lines,
+            tail=tail
+        )
+        return result
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
 # Register tool handler
 @server.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[TextContent]:
@@ -1067,6 +1112,13 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             result = handle_spyglass_search_registry(arguments["version"], arguments["registry"], arguments["query"])
         elif name == "spyglass_get_mcdoc_symbols":
             result = handle_spyglass_get_mcdoc_symbols()
+        elif name == "get_logs":
+            result = handle_get_logs(
+                launcher=arguments.get("launcher"),
+                instance=arguments.get("instance"),
+                lines=arguments.get("lines", 100),
+                tail=arguments.get("tail", True)
+            )
         else:
             raise ValueError(f"Unknown tool: {name}")
         
