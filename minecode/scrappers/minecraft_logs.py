@@ -229,9 +229,9 @@ def get_logs(
                     for inst_name, log_files in instances.items():
                         for log_file in log_files[:1]:  # Only get latest log per instance
                             content = read_log_file(log_file, lines, tail)
-                            # Calculate actual lines shown
+                            # Calculate actual lines shown (count all lines including empty ones)
                             if content and not content.startswith("Error"):
-                                lines_shown = len([line for line in content.split("\n") if line or content])
+                                lines_shown = len(content.split("\n"))
                             else:
                                 lines_shown = 0
                             result["logs"].append({
@@ -253,9 +253,9 @@ def get_logs(
                 latest_log = find_latest_log(default_dir)
                 if latest_log:
                     content = read_log_file(latest_log, lines, tail)
-                    # Calculate actual lines shown
+                    # Calculate actual lines shown (count all lines including empty ones)
                     if content and not content.startswith("Error"):
-                        lines_shown = len([line for line in content.split("\n") if line or content])
+                        lines_shown = len(content.split("\n"))
                     else:
                         lines_shown = 0
                     result["launcher"] = "default"
@@ -280,9 +280,9 @@ def get_logs(
                     detected_type = detect_launcher_type(tlauncher_dir)
                     if detected_type == "tlauncher" or launcher == "tlauncher":
                         content = read_log_file(latest_log, lines, tail)
-                        # Calculate actual lines shown
+                        # Calculate actual lines shown (count all lines including empty ones)
                         if content and not content.startswith("Error"):
-                            lines_shown = len([line for line in content.split("\n") if line or content])
+                            lines_shown = len(content.split("\n"))
                         else:
                             lines_shown = 0
                         result["launcher"] = "tlauncher"
