@@ -9,6 +9,10 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
+# Constants
+MAX_LOG_LINES = 1000  # Maximum number of lines to return for safety
+
+
 def get_default_minecraft_dir() -> Path:
     """Get the default Minecraft directory based on the operating system."""
     system = platform.system()
@@ -125,6 +129,22 @@ def find_prism_instance_logs(prism_dir: Path, instance_name: Optional[str] = Non
     return instances
 
 
+def calculate_line_count(content: str) -> int:
+    """
+    Calculate the number of lines in the content.
+    
+    Args:
+        content: The log content string
+    
+    Returns:
+        Number of lines in the content
+    """
+    if not content:
+        return 0
+    # Use splitlines() to properly handle different line ending conventions
+    return len(content.splitlines())
+
+
 def read_log_file(log_path: Path, lines: Optional[int] = None, tail: bool = False) -> str:
     """
     Read a log file and return its content.
@@ -133,6 +153,12 @@ def read_log_file(log_path: Path, lines: Optional[int] = None, tail: bool = Fals
         log_path: Path to the log file
         lines: Number of lines to return (None for all)
         tail: If True, return last N lines; if False, return first N lines
+    
+    Returns:
+        Log content as a string, or an empty string if the file doesn't exist
+    
+    Raises:
+        Returns error message string if reading fails
     """
     if not log_path.exists():
         return ""
@@ -150,7 +176,8 @@ def read_log_file(log_path: Path, lines: Optional[int] = None, tail: bool = Fals
         if lines is None:
             return content
         
-        log_lines = content.split("\n")
+        # Use splitlines() to properly handle line endings
+        log_lines = content.splitlines()
         
         if tail:
             selected_lines = log_lines[-lines:]
@@ -160,7 +187,8 @@ def read_log_file(log_path: Path, lines: Optional[int] = None, tail: bool = Fals
         return "\n".join(selected_lines)
     
     except Exception as e:
-        return f"Error reading log file: {str(e)}"
+        # Return a clearly marked error string
+        return f"ERROR_READING_FILE: {str(e)}"
 
 
 def detect_launcher_type(minecraft_dir: Path) -> str:
@@ -200,7 +228,7 @@ def get_logs(
     Args:
         launcher: Launcher type ("default", "prism", "tlauncher", or None for auto-detect)
         instance: Instance name (for Prism Launcher)
-        lines: Number of lines to return (None for all, max 1000 for safety)
+        lines: Number of lines to return (None for all, max MAX_LOG_LINES for safety)
         tail: If True, return last N lines; if False, return first N lines
     
     Returns:
@@ -213,8 +241,8 @@ def get_logs(
     }
     
     # Limit lines for safety
-    if lines is not None and lines > 1000:
-        lines = 1000
+    if lines is not None and lines > MAX_LOG_LINES:
+        lines = MAX_LOG_LINES
     
     try:
         if launcher == "prism" or launcher is None:
@@ -229,11 +257,11 @@ def get_logs(
                     for inst_name, log_files in instances.items():
                         for log_file in log_files[:1]:  # Only get latest log per instance
                             content = read_log_file(log_file, lines, tail)
-                            # Calculate actual lines shown (count all lines including empty ones)
-                            if content and not content.startswith("Error"):
-                                lines_shown = len(content.split("\n"))
-                            else:
+                            # Check if an error occurred during reading
+                            if content.startswith("ERROR_READING_FILE:"):
                                 lines_shown = 0
+                            else:
+                                lines_shown = calculate_line_count(content)
                             result["logs"].append({
                                 "instance": inst_name,
                                 "file": str(log_file.name),
@@ -253,11 +281,11 @@ def get_logs(
                 latest_log = find_latest_log(default_dir)
                 if latest_log:
                     content = read_log_file(latest_log, lines, tail)
-                    # Calculate actual lines shown (count all lines including empty ones)
-                    if content and not content.startswith("Error"):
-                        lines_shown = len(content.split("\n"))
-                    else:
+                    # Check if an error occurred during reading
+                    if content.startswith("ERROR_READING_FILE:"):
                         lines_shown = 0
+                    else:
+                        lines_shown = calculate_line_count(content)
                     result["launcher"] = "default"
                     result["success"] = True
                     result["logs"].append({
@@ -280,11 +308,11 @@ def get_logs(
                     detected_type = detect_launcher_type(tlauncher_dir)
                     if detected_type == "tlauncher" or launcher == "tlauncher":
                         content = read_log_file(latest_log, lines, tail)
-                        # Calculate actual lines shown (count all lines including empty ones)
-                        if content and not content.startswith("Error"):
-                            lines_shown = len(content.split("\n"))
-                        else:
+                        # Check if an error occurred during reading
+                        if content.startswith("ERROR_READING_FILE:"):
                             lines_shown = 0
+                        else:
+                            lines_shown = calculate_line_count(content)
                         result["launcher"] = "tlauncher"
                         result["success"] = True
                         result["logs"].append({
