@@ -10,7 +10,7 @@ Please write issues for me to fix.
 
 MineCode is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that gives AI assistants like **GitHub Copilot** and **Claude** real-time access to Minecraft data, documentation, and datapack generators.
 
-![alt text](https://github.com/AnCarsenat/minecode-mcp/raw/main/assets/readme/example3.png)
+![alt text](https://github.com/AnCarsenat/minecode-mcp/raw/main/assets/readme/example6.png)
 ---
 
 ## ✨ Features
