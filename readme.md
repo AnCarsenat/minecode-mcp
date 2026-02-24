@@ -8,18 +8,20 @@ Please write issues for me to fix.
 [![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-MineCode is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that gives AI assistants like **GitHub Copilot** and **Claude** real-time access to Minecraft data, documentation, and datapack generators.
+MineCode is a **local** [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that gives AI assistants like **GitHub Copilot** and **Claude** real-time access to Minecraft data, documentation, datapack generators, and your minecraft logs.
 
 ![alt text](https://github.com/AnCarsenat/minecode-mcp/raw/main/assets/readme/example6.png)
 ---
 
 ## ✨ Features
 
-- 🔧 **27 MCP Tools** for Minecraft development
-- 📚 **Minecraft Wiki** integration (search, pages, categories)
+- 🔧 **19 MCP Tools** for Minecraft development
+- 📚 **Minecraft Wiki** integration (search, pages, categories, command docs)
 - 🐛 **Mojira** bug tracker search
-- 🔍 **Spyglass API** (registries, commands, block states)
+- 🔍 **Spyglass API** (registries, commands, block states, mcdoc symbols)
 - 🎨 **Misode Generators** (loot tables, recipes, worldgen presets)
+- 📄 **Log Reading** — auto-detect and read logs from default, Prism, and TLauncher instances
+- 🧠 **Assistant Pre-prompts** — configurable system prompts for better AI accuracy
 
 ---
 
@@ -162,29 +164,26 @@ Follow these steps to set up a local development environment, run the MCP server
 ### Minecraft Wiki
 | Tool | Description |
 |------|-------------|
-| `search_wiki` | Search for wiki pages |
-| `get_wiki_page` | Get page content and summary |
+| `search_wiki` | Search for wiki pages (supports full-text search with snippets) |
+| `get_wiki_page` | Get page summary and section list |
 | `get_wiki_commands` | List all Minecraft commands |
 | `get_wiki_category` | Get pages in a category |
-| `get_wiki_page_content` | Get full page content for a wiki page |
-| `get_wiki_command_info` | Get detailed command documentation from the wiki |
-| `get_wiki_random` | Get random wiki pages |
+| `get_wiki_page_content` | Get full structured page content |
+| `get_wiki_command_info` | Get detailed command syntax documentation |
 
 ### Mojira Bug Tracker
 | Tool | Description |
 |------|-------------|
-| `search_mojira` | Search bug reports |
+| `search_mojira` | Search bug reports (filter by project, status, resolution) |
 
 ### Spyglass API
 | Tool | Description |
 |------|-------------|
 | `spyglass_get_versions` | Get all MC versions with pack formats |
-| `spyglass_get_registries` | Get registry entries (items, blocks, entities) |
-| `spyglass_get_block_states` | Get block state properties |
+| `spyglass_get_registries` | Get registry entries (items, blocks, entities, biomes, etc.) |
+| `spyglass_get_block_states` | Get block state properties and defaults |
 | `spyglass_get_commands` | Get command syntax trees |
-| `spyglass_get_items` | Get list of items for a version |
-| `spyglass_search_registry` | Search a Spyglass registry for a query |
-| `spyglass_get_mcdoc_symbols` | Get vanilla mcdoc symbols from Spyglass |
+| `spyglass_get_mcdoc_symbols` | Get vanilla mcdoc type symbols for NBT/data structures |
 
 ### Misode Generators
 | Tool | Description |
@@ -195,16 +194,11 @@ Follow these steps to set up a local development environment, run the MCP server
 | `misode_get_loot_tables` | Get loot tables by category |
 | `misode_get_recipes` | Get recipes with filtering |
 | `misode_list_versions` | List available Misode/Minecraft versions |
-| `misode_get_data` | Get raw Misode data for a version and data type |
-| `misode_search_data` | Search Misode data for a query |
 
-### Utility
+### Logs
 | Tool | Description |
 |------|-------------|
-| `hello_world` | Test connectivity |
-| `get_minecraft_version` | Get version info |
-| `validate_datapack` | Validate datapack structure |
-| `list_commands` | List commands for a version |
+| `get_logs` | Read Minecraft logs (auto-detects default, Prism, or TLauncher) |
 
 ---
 
@@ -220,6 +214,8 @@ Follow these steps to set up a local development environment, run the MCP server
 
 > "What's the syntax for the /execute command?"
 
+> "Check my Minecraft logs for errors"
+
 ---
 
 ## 📁 Project Structure
@@ -228,14 +224,22 @@ Follow these steps to set up a local development environment, run the MCP server
 minecode-mcp/
 ├── minecode/
 │   ├── __init__.py
-│   ├── server.py          # MCP server with 27 tools
+│   ├── server.py              # MCP server with 19 tools
+│   ├── config/
+│   │   ├── config.json        # Central configuration
+│   │   └── prompt_config.json
+│   ├── preprompts/
+│   │   └── assistant_preprompt.txt  # AI assistant pre-prompt
 │   └── scrappers/
 │       ├── minecraftwiki.py
 │       ├── mojira.py
 │       ├── spyglass.py
-│       └── misode.py
+│       ├── misode.py
+│       └── minecraft_logs.py  # Multi-launcher log reader
 ├── example/
-│   └── crystal_dimension/ # Example datapack
+│   └── crystal_dimension/     # Example datapack
+├── scripts/
+│   └── release.ps1            # Build, bump & publish script
 ├── pyproject.toml
 ├── LICENSE
 └── readme.md
@@ -254,16 +258,12 @@ minecode-mcp/
 
 ---
 
-## 🐍 Plans
+## 🐍 Changelog Highlights
 
-- [ ] Getting logs using prism's api for log sharing https://mclo.gs
-If impossible, perform a search for where minecraft assets are generally located at
-
-- [ ] Better spyglass tools
-
-- [ ] Better multiversion support
-
-- [ ] Pre-prompts to increase agent accuracy
+- [X] **Log reading** — Multi-launcher support (default, Prism, TLauncher) with auto-detection
+- [X] **Better Spyglass tools** — mcdoc symbols, improved registry search
+- [X] **Multi-version support** — pack_format-based version handling
+- [X] **Assistant pre-prompts** — Configurable system prompts for more accurate AI responses
 
 
 
