@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/ancarsenat-minecode-mcp-badge.png)](https://mseep.ai/app/ancarsenat-minecode-mcp)
+
 # 🎮 MineCode MCP
 
 **MCP Server for Minecraft Datapack Development**
