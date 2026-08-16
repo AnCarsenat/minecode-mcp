@@ -1,8 +1,11 @@
-# 🎮 MineCode MCP
+# MineCode MCP
 
 **MCP Server for Minecraft Datapack Development**
 
 Written for a hackathon about MCP sponsored by dust, alpic, and others. Please star if you'd like to help out, and open issues for anything broken.
+
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/ancarsenat-minecode-mcp-badge.png)](https://mseep.ai/app/ancarsenat-minecode-mcp)
+
 
 [![PyPI](https://img.shields.io/pypi/v/minecode-mcp)](https://pypi.org/project/minecode-mcp/)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://python.org)
