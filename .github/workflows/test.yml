@@ -46,6 +46,74 @@ jobs:
           assert {t.name for t in tools.TOOLS} == set(tools.HANDLERS)
           "
 
+  package:
+    name: Package builds
+    runs-on: ubuntu-latest
+    # Separate from the test job because it checks something different:
+    # tests prove the CODE works, this proves the PACKAGE can be built and
+    # shipped. Those fail independently. Renaming readme.md to README.md
+    # broke the build while every test still passed, and it would only have
+    # surfaced at release time, as a readme error during a version tag.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Build
+        run: python -m build
+
+      - name: Check package metadata
+        run: python -m twine check dist/*
+
+      - name: Verify data files are present in the wheel
+        # The preprompt, config and migration table are data files, not
+        # Python. If a packaging change drops them the server still starts
+        # but silently loses its version knowledge -- invisible in an
+        # editable install, broken for everyone who pip-installs it.
+        run: |
+          WHEEL=$(ls dist/*.whl)
+          CONTENTS=$(python -c "import zipfile,sys; print('\n'.join(zipfile.ZipFile(sys.argv[1]).namelist()))" "$WHEEL")
+          for required in \
+            "minecode/preprompts/assistant_preprompt.txt" \
+            "minecode/config/config.json" \
+            "minecode/knowledge/migrations.json"
+          do
+            if ! echo "$CONTENTS" | grep -q "$required"; then
+              echo "::error::$required is missing from the wheel"
+              exit 1
+            fi
+            echo "ok: $required"
+          done
+
+      - name: Verify the built package actually runs
+        # Installs the wheel into a clean venv and drives a real MCP
+        # handshake. Catches breakage that only appears once installed --
+        # a missing dependency, or a data file that resolves in the source
+        # tree but not from site-packages.
+        run: |
+          python -m venv /tmp/verify
+          /tmp/verify/bin/pip install --quiet dist/*.whl
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | timeout 60 /tmp/verify/bin/minecode 2>/dev/null | tail -1 \
+            | python -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          count = len(data['result']['tools'])
+          print(f'{count} tools advertised by the installed package')
+          assert count > 0, 'installed package advertised no tools'
+          "
+
   live:
     name: Live API tests
     # Only on a schedule or a manual run -- see the note above.
