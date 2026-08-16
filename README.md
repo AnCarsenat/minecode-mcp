@@ -4,8 +4,8 @@
 
 Written for a hackathon about MCP sponsored by dust, alpic, and others. Please star if you'd like to help out, and open issues for anything broken.
 
-[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/ancarsenat-minecode-mcp-badge.png)](https://mseep.ai/app/ancarsenat-minecode-mcp)
-
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/ancarsenat-minecode-mcp-badge.png)](https://mseep.ai/app/ancarsenat-minecode-mcp)  
+[![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app/5b3391b1-6799-4fd5-8496-308849e8a8c7)
 
 [![PyPI](https://img.shields.io/pypi/v/minecode-mcp)](https://pypi.org/project/minecode-mcp/)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://python.org)
