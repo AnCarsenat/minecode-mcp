@@ -94,25 +94,55 @@ jobs:
           done
 
       - name: Verify the built package actually runs
-        # Installs the wheel into a clean venv and drives a real MCP
-        # handshake. Catches breakage that only appears once installed --
+        # Installs the wheel into a clean venv and drives a real MCP session
+        # against it. Catches breakage that only appears once installed --
         # a missing dependency, or a data file that resolves in the source
         # tree but not from site-packages.
+        #
+        # Uses the mcp client library rather than piping hand-written
+        # JSON-RPC. Piping races: the shell closes stdin as soon as the last
+        # line is written, so the server can hit EOF and exit before it
+        # answers tools/list, and `tail -1` then reads the initialize reply
+        # instead. That passed locally and failed in CI with KeyError: 'tools'.
+        # A real client waits for each response.
         run: |
           python -m venv /tmp/verify
           /tmp/verify/bin/pip install --quiet dist/*.whl
-          printf '%s\n' \
-            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
-            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
-            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-            | timeout 60 /tmp/verify/bin/minecode 2>/dev/null | tail -1 \
-            | python -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          count = len(data['result']['tools'])
-          print(f'{count} tools advertised by the installed package')
-          assert count > 0, 'installed package advertised no tools'
-          "
+          /tmp/verify/bin/python - <<'PY'
+          import asyncio, sys
+          from mcp import ClientSession, StdioServerParameters
+          from mcp.client.stdio import stdio_client
+
+          async def main():
+              params = StdioServerParameters(command="/tmp/verify/bin/minecode", args=[])
+              async with stdio_client(params) as (read, write):
+                  async with ClientSession(read, write) as session:
+                      info = await session.initialize()
+                      tools = (await session.list_tools()).tools
+                      prompts = (await session.list_prompts()).prompts
+                      resources = (await session.list_resources()).resources
+                      print(f"server: {info.serverInfo.name}")
+                      print(f"tools: {len(tools)}, prompts: {len(prompts)}, "
+                            f"resources: {len(resources)}")
+                      assert tools, "installed package advertised no tools"
+
+                      # Exercise a tool that reads a packaged data file, so a
+                      # wheel missing migrations.json fails here rather than
+                      # silently degrading for users.
+                      result = await session.call_tool(
+                          "check_version_syntax",
+                          {"content": "/give @s diamond_sword{Enchantments:[]} 1",
+                           "version": "1.21.4", "kind": "command"},
+                      )
+                      import json
+                      payload = json.loads(result.content[0].text)
+                      assert payload["success"], payload
+                      assert payload["issue_count"] > 0, (
+                          "migration table did not load from the installed wheel")
+                      print("migration detection works from the installed package")
+
+          asyncio.run(main())
+          PY
 
   live:
     name: Live API tests
