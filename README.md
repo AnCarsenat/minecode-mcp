@@ -1,17 +1,30 @@
+<!--
+  Absolute raw URLs, not relative paths: this file is also the PyPI long
+  description, and PyPI does not resolve repo-relative image paths.
+  The logo is 64x64 and shown at 96 so the block art stays close to native
+  scale -- GitHub strips style attributes, so image-rendering cannot be set.
+-->
+<div align="center">
+
+<img src="https://github.com/AnCarsenat/minecode-mcp/raw/main/assets/readme/logo.png" alt="MineCode logo" width="96" height="96">
+
 # MineCode MCP
 
-**MCP Server for Minecraft Datapack Development**
+**Version-accurate Minecraft data for AI assistants**
 
-Written for a hackathon about MCP sponsored by dust, alpic, and others. Please star if you'd like to help out, and open issues for anything broken.
+[![PyPI](https://img.shields.io/pypi/v/minecode-mcp?logo=pypi&logoColor=white)](https://pypi.org/project/minecode-mcp/)
+[![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Tests](https://github.com/AnCarsenat/minecode-mcp/actions/workflows/test.yml/badge.svg)](https://github.com/AnCarsenat/minecode-mcp/actions/workflows/test.yml)
 
-[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/ancarsenat-minecode-mcp-badge.png)](https://mseep.ai/app/ancarsenat-minecode-mcp)  
+[![MseeP.ai Security Assessment](https://mseep.net/pr/ancarsenat-minecode-mcp-badge.png)](https://mseep.ai/app/ancarsenat-minecode-mcp)
 [![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app/5b3391b1-6799-4fd5-8496-308849e8a8c7)
 
-[![PyPI](https://img.shields.io/pypi/v/minecode-mcp)](https://pypi.org/project/minecode-mcp/)
-[![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://python.org)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+</div>
 
 MineCode is a **local** [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that gives AI assistants like **GitHub Copilot** and **Claude** real-time access to version-accurate Minecraft data, documentation, vanilla presets, and your Minecraft logs.
+
+Written for a hackathon about MCP sponsored by dust, alpic, and others. Please star if you'd like to help out, and open issues for anything broken.
 
 ![example](https://github.com/AnCarsenat/minecode-mcp/raw/main/assets/readme/example6.png)
 
