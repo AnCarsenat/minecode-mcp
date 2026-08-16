@@ -1,12 +1,13 @@
 <!--
   Absolute raw URLs, not relative paths: this file is also the PyPI long
   description, and PyPI does not resolve repo-relative image paths.
-  The logo is 64x64 and shown at 96 so the block art stays close to native
-  scale -- GitHub strips style attributes, so image-rendering cannot be set.
+  Points at the 256x256 export and displays at 128, so the browser scales
+  DOWN rather than up. GitHub strips style attributes, so image-rendering
+  cannot be set -- downscaling is what keeps the block art from smearing.
 -->
 <div align="center">
 
-<img src="https://github.com/AnCarsenat/minecode-mcp/raw/main/assets/readme/logo.png" alt="MineCode logo" width="96" height="96">
+<img src="https://github.com/AnCarsenat/minecode-mcp/raw/main/assets/readme/logo_256x256.png" alt="MineCode logo" width="128" height="128">
 
 # MineCode MCP
 
@@ -577,25 +578,65 @@ That's it. No token is generated and nothing is pasted into GitHub.
 
 ### Releasing
 
+> **⚠️ Step 1 is bumping the version in `pyproject.toml`. Do not skip it.**
+>
+> A version number on PyPI is **permanent**. Once `0.2.0` is published, that
+> number can never be reused or overwritten — even if you delete the release.
+> A bad publish can only be followed by a *new* version, never a replacement.
+> Re-tagging an already-published version fails at the upload step.
+
+**1. Bump the version.** Edit `version` in `pyproject.toml`:
+
+```toml
+version = "0.2.1"   # was 0.2.0
+```
+
+Which digit to move:
+
+| Change | Bump | Example |
+|--------|------|---------|
+| Bug fix, docs, internals — nothing user-visible breaks | patch | `0.2.0` → `0.2.1` |
+| New tools, new parameters — existing setups keep working | minor | `0.2.0` → `0.3.0` |
+| Tools removed or renamed, parameters removed — existing configs break | major-ish | `0.2.0` → `0.3.0` before 1.0, `1.x` → `2.0` after |
+
+(`0.2.0` was a minor bump because it removed two tools and renamed one.)
+
+**2. Commit, tag, and push.** The tag must be `v` + the exact version:
+
 ```bash
-# 1. Bump the version in pyproject.toml, e.g. 0.1.9 -> 0.2.0
-# 2. Commit, tag, push
 git add pyproject.toml
-git commit -m "Release 0.2.0"
-git tag v0.2.0
+git commit -m "Release 0.2.1"
+git tag v0.2.1
 git push origin main --tags
 ```
 
-The workflow fires on the tag and will:
+**3. Approve the deployment.** The workflow builds, then pauses. Go to the
+**Actions** tab → the running **Publish to PyPI** run → **Review deployments**
+→ tick `pypi` → **Approve and deploy**. GitHub also emails you an approve link.
 
-1. Verify the tag matches `pyproject.toml` (a mismatch fails the build rather than shipping a mislabelled release)
-2. Run the offline test suite
-3. Build the wheel and sdist
-4. Check the metadata with `twine check`
-5. Verify the preprompt, config, and migration table are actually inside the wheel
-6. Publish to PyPI
+Publishing takes about 30 seconds after approval.
 
-If you enabled required reviewers, approve the run in the **Actions** tab.
+#### What the workflow checks before it will publish
+
+1. **The tag matches `pyproject.toml`** — this is the safety net for a forgotten bump. Tagging `v0.2.1` while `pyproject.toml` still says `0.2.0` fails the build with `Tag v0.2.1 does not match pyproject.toml version 0.2.0`, and nothing is published
+2. Offline test suite passes
+3. Wheel and sdist build
+4. `twine check` on the metadata
+5. The preprompt, config, and migration table are actually inside the wheel
+
+If any of these fail, the approval button never appears — there is nothing to approve.
+
+#### If you forgot to bump
+
+The build fails at step 1 and nothing ships. Recover by deleting the tag, bumping properly, and re-tagging:
+
+```bash
+git tag -d v0.2.1
+git push origin :refs/tags/v0.2.1
+# bump pyproject.toml, commit, then tag again
+```
+
+This is safe precisely *because* nothing was published.
 
 ### Optional: TestPyPI first
 

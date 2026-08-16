@@ -4,6 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "minecode-mcp"
+# To release: bump this, commit, then tag with a matching "v" prefix.
+#     version = "0.2.1"  ->  git tag v0.2.1 && git push origin main --tags
+# The publish workflow refuses to build if the tag and this value disagree,
+# so a forgotten bump fails loudly instead of shipping a mislabelled release.
+# PyPI version numbers are permanent -- a published version can never be
+# replaced, only superseded. See "Releasing" in README.md.
 version = "0.2.0"
 description = "MCP Server for Minecraft datapack development with wiki, Spyglass, Misode, and Mojira integrations"
 readme = "README.md"
