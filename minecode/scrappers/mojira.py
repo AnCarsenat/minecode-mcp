@@ -2,13 +2,29 @@
 Mojira.dev Scraper for Minecraft Bug Tracker
 """
 
+import logging
 import requests
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from typing import Optional
 from urllib.parse import urlencode
 
+from .. import cache
+
+logger = logging.getLogger("minecode.mojira")
+
 BASE_URL = "https://mojira.dev/"
+USER_AGENT = "MineCode/1.0 (+https://github.com/AnCarsenat/minecode-mcp)"
+
+
+class ScraperStructureError(RuntimeError):
+    """
+    Raised when the scraped page no longer has the structure we expect.
+
+    Distinct from "no results" on purpose: an HTML-shape change must surface as
+    an error the caller can see, not as an empty result set that reads like a
+    genuine answer.
+    """
 
 # Available filter options
 PROJECTS = ["MC", "MCPE", "MCL", "REALMS", "WEB", "BDS"]
@@ -90,22 +106,36 @@ def search(
     if params:
         url += "?" + urlencode(params)
     
-    # Make request
-    response = requests.get(url, timeout=10)
-    response.raise_for_status()
-    
+    # Make request (cached briefly -- issue status does change)
+    def fetch():
+        response = requests.get(url, timeout=10,
+                                headers={"User-Agent": USER_AGENT})
+        response.raise_for_status()
+        return response.text
+
+    html = cache.cached_fetch(f"mojira:{url}", cache.TTL_MOJIRA, fetch)
+
     # Parse HTML
-    soup = BeautifulSoup(response.text, "html.parser")
-    
+    soup = BeautifulSoup(html, "html.parser")
+
     # Find issue table
     issues = []
     table = soup.find("table", class_="issue-table")
-    
+
     if not table:
-        return issues
-    
+        # This scraper depends on mojira.dev's markup. When that markup
+        # changes, returning [] would report "no bugs found" -- a confident
+        # wrong answer that reads as a real result. Raise instead, so the
+        # failure is visible as a failure.
+        raise ScraperStructureError(
+            "Could not find the issue table on mojira.dev. The site's HTML has "
+            "probably changed and this scraper needs updating. Do NOT interpret "
+            "this as 'no matching issues'."
+        )
+
     tbody = table.find("tbody")
     if not tbody:
+        # An empty tbody is a legitimate no-results response.
         return issues
     
     # Parse each row

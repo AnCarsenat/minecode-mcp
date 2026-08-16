@@ -14,9 +14,12 @@ Provides access to Minecraft Java Edition data including:
 import requests
 from typing import Optional, List, Dict, Any, Union
 
+from .. import cache
+
 # API Configuration
 BASE_URL = "https://api.spyglassmc.com"
-USER_AGENT = "MineCode/1.0"
+USER_AGENT = "MineCode/1.0 (+https://github.com/AnCarsenat/minecode-mcp)"
+TIMEOUT = 30  # registry payloads are large; a short timeout fails on slow links
 
 # Default headers for all requests
 DEFAULT_HEADERS = {
@@ -24,24 +27,35 @@ DEFAULT_HEADERS = {
 }
 
 
-def _make_request(endpoint: str, params: Optional[Dict] = None) -> Dict[str, Any]:
+def _make_request(endpoint: str, params: Optional[Dict] = None,
+                  ttl: int = cache.IMMUTABLE) -> Dict[str, Any]:
     """
-    Make a request to the Spyglass API.
-    
+    Make a request to the Spyglass API, via the disk cache.
+
     Args:
         endpoint: API endpoint (e.g., "/mcje/versions")
         params: Optional query parameters
-        
+        ttl: Cache lifetime. Defaults to IMMUTABLE, which is correct for
+             version-pinned endpoints -- the registries for 1.21.4 are the
+             same today as next year. Endpoints whose content moves (the
+             version list, mcdoc symbols) pass an explicit TTL.
+
     Returns:
         JSON response as dictionary
-        
+
     Raises:
         requests.HTTPError: If the request fails
     """
     url = f"{BASE_URL}{endpoint}"
-    response = requests.get(url, headers=DEFAULT_HEADERS, params=params)
-    response.raise_for_status()
-    return response.json()
+    key = f"spyglass:{endpoint}:{sorted((params or {}).items())}"
+
+    def fetch():
+        response = requests.get(url, headers=DEFAULT_HEADERS, params=params,
+                                timeout=TIMEOUT)
+        response.raise_for_status()
+        return response.json()
+
+    return cache.cached_fetch(key, ttl, fetch)
 
 
 # ============================================================================
@@ -66,7 +80,24 @@ def get_versions() -> List[Dict[str, Any]]:
         - release_time: ISO timestamp of release
         - sha1: SHA1 hash
     """
-    return _make_request("/mcje/versions")
+    # Not immutable: new snapshots appear weekly.
+    return _make_request("/mcje/versions", ttl=cache.TTL_VERSION_LIST)
+
+
+def get_latest_release() -> Optional[Dict[str, Any]]:
+    """Return the newest stable release, or None if the list is empty."""
+    for v in get_versions():
+        if v.get("type") == "release":
+            return v
+    return None
+
+
+def get_latest_snapshot() -> Optional[Dict[str, Any]]:
+    """Return the newest snapshot, or None if the list is empty."""
+    for v in get_versions():
+        if v.get("type") == "snapshot":
+            return v
+    return None
 
 
 # ============================================================================
@@ -256,12 +287,112 @@ def get_sounds(version: str) -> List[str]:
 
 def get_mcdoc_symbols() -> Dict[str, Any]:
     """
-    Get vanilla-mcdoc symbols.
-    
-    Returns:
-        Mcdoc symbol definitions for vanilla Minecraft
+    Get the full vanilla-mcdoc symbol table.
+
+    WARNING: this response is very large (megabytes). Never return it to an
+    agent unfiltered -- it will either exhaust the context window or be
+    truncated into unusable fragments. Use search_mcdoc_symbols() to find a
+    symbol path and get_mcdoc_symbol() to fetch one definition.
+
+    Cached with a TTL rather than immutably: mcdoc tracks the latest game
+    version and is updated continuously.
     """
-    return _make_request("/vanilla-mcdoc/symbols")
+    return _make_request("/vanilla-mcdoc/symbols", ttl=cache.TTL_VERSION_LIST)
+
+
+def _symbol_map() -> Dict[str, Any]:
+    """
+    Normalize the mcdoc response to a flat {symbol_path: definition} map.
+
+    The API nests symbols under a category key ("mcdoc", "mcdoc/dispatcher").
+    Callers only ever want the flat lookup, and flattening in one place keeps
+    the shape change contained if the API restructures.
+    """
+    raw = get_mcdoc_symbols()
+    if not isinstance(raw, dict):
+        return {}
+
+    flat: Dict[str, Any] = {}
+    for key, value in raw.items():
+        if not isinstance(value, dict):
+            continue
+        if key in ("mcdoc", "mcdoc/dispatcher"):
+            for sym, definition in value.items():
+                flat[sym] = definition
+        else:
+            # Unrecognised top-level key: keep it addressable rather than
+            # dropping data we do not understand.
+            flat[key] = value
+    return flat or (raw if isinstance(raw, dict) else {})
+
+
+def search_mcdoc_symbols(query: str, limit: int = 40) -> List[str]:
+    """
+    Find mcdoc symbol paths matching a query. Returns paths only, no bodies.
+
+    Args:
+        query: Case-insensitive substring, e.g. "ItemStack", "loot", "text"
+        limit: Maximum paths to return
+
+    Returns:
+        Matching symbol paths, exact-ish matches first
+    """
+    symbols = _symbol_map()
+    q = (query or "").lower()
+    matches = [s for s in symbols if q in s.lower()]
+
+    # Rank by how close the match is to the tail of the path, which is the
+    # part a caller usually knows ("ItemStack" rather than the full namespace).
+    def rank(path: str) -> tuple:
+        tail = path.rsplit("::", 1)[-1].lower()
+        return (0 if tail == q else 1 if tail.startswith(q) else 2, len(path), path)
+
+    matches.sort(key=rank)
+    return matches[:limit]
+
+
+def _prune(node: Any, depth: int, max_depth: int) -> Any:
+    """Recursively trim a symbol definition to `max_depth` levels."""
+    if depth >= max_depth:
+        if isinstance(node, dict):
+            return {"_truncated": f"{len(node)} keys omitted; raise depth to expand"}
+        if isinstance(node, list):
+            return [f"_truncated: {len(node)} items"]
+        return node
+
+    if isinstance(node, dict):
+        return {k: _prune(v, depth + 1, max_depth) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_prune(v, depth + 1, max_depth) for v in node[:50]]
+    return node
+
+
+def get_mcdoc_symbol(symbol: str, depth: int = 3) -> Optional[Dict[str, Any]]:
+    """
+    Get one mcdoc symbol definition, pruned to `depth` levels of nesting.
+
+    Args:
+        symbol: Fully-qualified path, e.g. "java::world::item::ItemStack"
+        depth: Levels of nested types to expand (1-6)
+
+    Returns:
+        The pruned definition, or None if the symbol does not exist
+    """
+    depth = max(1, min(int(depth), 6))
+    symbols = _symbol_map()
+
+    definition = symbols.get(symbol)
+    if definition is None:
+        # Tolerate a tail-only reference like "ItemStack".
+        tail_matches = [s for s in symbols if s.rsplit("::", 1)[-1] == symbol]
+        if len(tail_matches) == 1:
+            symbol = tail_matches[0]
+            definition = symbols[symbol]
+        else:
+            return None
+
+    return {"symbol": symbol, "depth": depth,
+            "definition": _prune(definition, 0, depth)}
 
 
 # ============================================================================
