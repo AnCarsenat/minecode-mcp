@@ -1,0 +1,68 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Live tests hit volunteer-run services (Spyglass, misode, minecraft.wiki).
+  # Running them on every push would be both flaky and rude, so they get their
+  # own nightly job instead.
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  offline:
+    name: Offline tests (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run offline tests
+        env:
+          # Never touch the developer cache path in CI.
+          MINECODE_NO_CACHE: '1'
+        run: python -m pytest tests/ -v -m "not network"
+
+      - name: Verify the server imports and the tool registry is consistent
+        run: |
+          python -c "
+          from minecode import tools
+          print(f'{len(tools.TOOLS)} tools, {len(tools.HANDLERS)} handlers')
+          assert {t.name for t in tools.TOOLS} == set(tools.HANDLERS)
+          "
+
+  live:
+    name: Live API tests
+    # Only on a schedule or a manual run -- see the note above.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run live tests
+        run: python -m pytest tests/ -v -m network
