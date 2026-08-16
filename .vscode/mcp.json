@@ -1,13 +1,11 @@
 {
-  "servers": [
-    {
-      "name": "minecode-debug",
+  "servers": {
+    "minecode-debug": {
+      "type": "stdio",
       "command": "${command:python.interpreterPath}",
       "args": ["-m", "minecode.server"],
-      "transport": "stdio",
-      "cwd": "${workspaceFolder}",
-      "autoStart": false,
-      "description": "Start MineCode MCP server for workspace (stdio transport)."
+      "cwd": "${workspaceFolder}"
     }
-  ]
+  },
+  "inputs": []
 }

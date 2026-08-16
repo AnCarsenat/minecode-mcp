@@ -10,7 +10,7 @@ name = "minecode-mcp"
 # so a forgotten bump fails loudly instead of shipping a mislabelled release.
 # PyPI version numbers are permanent -- a published version can never be
 # replaced, only superseded. See "Releasing" in README.md.
-version = "0.2.1"
+version = "0.2.2"
 description = "MCP Server for Minecraft datapack development with wiki, Spyglass, Misode, and Mojira integrations"
 readme = "README.md"
 license = "MIT"

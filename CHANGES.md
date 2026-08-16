@@ -188,3 +188,15 @@ The `validate_command` result is worth noting: legacy NBT *parses* cleanly again
 - **Full JSON schema validation** (`validate_datapack_file`) — needs an mcdoc type-checker, and the mcdoc endpoint is currently 502-ing anyway. `misode_get_preset_data` is the practical substitute.
 - **Mods and plugins** — the README claims "datapacks, mods, plugins" but every tool is datapack/resource-pack only. Either narrow the pitch or add Fabric/NeoForge/Paper support; narrowing is the better call until the datapack story is airtight.
 - **Argument sub-grammars** in `validate_command` — parsers like `minecraft:item_stack` accept any single token. Catches structural errors, not malformed component blocks.
+
+---
+
+## 0.2.2 — VS Code configuration docs
+
+The VS Code snippet in the README used a bare `"command": "python"`. VS Code spawns MCP servers with the first `python` on `PATH` — not the workspace's selected interpreter — so a pipx or venv install failed at startup with `No module named minecode`, and the README's own troubleshooting row was too vague to point at the cause.
+
+- README now leads the VS Code section with `"command": "minecode"`, the installed console script, which carries its own interpreter and works for pipx, venv, and `--user` installs alike. The `-m minecode.server` form is kept as an alternative with an explicit warning about interpreter resolution.
+- Troubleshooting gained a row for `Error while finding module specification for 'minecode'` — the natural next thing to try after the above fails, and also wrong: the module form is `-m minecode.server`.
+- `.vscode/mcp.json` used the array form of `servers`, which VS Code does not accept; it is now the documented object form.
+
+Docs and editor config only. No change to the server or to any tool.

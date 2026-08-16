@@ -215,7 +215,8 @@ Configure your client (next section), then restart it. The client spawns the ser
 | Symptom | Cause and fix |
 |---------|---------------|
 | `command not found: minecode` | The script isn't on PATH. Use `python -m minecode.server`, or check `pip show -f minecode-mcp` |
-| `No module named minecode` | Wrong interpreter. Use the same Python you installed into — in a venv, use its absolute path in the client config |
+| `No module named minecode` | Wrong interpreter. The client's `python` isn't the one you installed into — classic with pipx and venv installs. Use `"command": "minecode"` in the client config, or the interpreter's absolute path |
+| `Error while finding module specification for 'minecode'` | `-m minecode` is not a valid entry point. The module form is `-m minecode.server` |
 | `AttributeError: 'Server' object has no attribute 'list_tools'` | You have mcp 2.x. Run `pip install "mcp>=1.25.0,<2"` |
 | Server starts, client shows no tools | Client config points at a different Python or a stale install. Restart the client fully — most only read MCP config at startup |
 | Everything hangs with no output | Expected when run directly, see above. If it happens *inside a client*, check the client's MCP logs |
@@ -253,6 +254,23 @@ Add to **User Settings** (`Ctrl+Shift+P` → "MCP: Open User Configuration"), or
   "servers": {
     "minecode": {
       "type": "stdio",
+      "command": "minecode",
+      "args": []
+    }
+  },
+  "inputs": []
+}
+```
+
+The `minecode` script is installed alongside the package and already points at the right interpreter, so this form works for pipx, venv, and `--user` installs alike.
+
+The module form is equivalent **only if the package is importable from whichever `python` the client resolves**:
+
+```json
+{
+  "servers": {
+    "minecode": {
+      "type": "stdio",
       "command": "python",
       "args": ["-m", "minecode.server"]
     }
@@ -261,7 +279,9 @@ Add to **User Settings** (`Ctrl+Shift+P` → "MCP: Open User Configuration"), or
 }
 ```
 
-> On Windows use `"command": "py"`. `py` is the Windows launcher and does not exist on macOS or Linux.
+> ⚠️ VS Code spawns the server with a bare `python` from `PATH` — **not** your selected Python interpreter, and not a pipx or venv environment. With a pipx install this fails with `No module named minecode`, since the package lives in pipx's own venv. Use `"command": "minecode"` above, or the absolute interpreter path from the next section.
+
+> On Windows use `"command": "py"` for the module form. `py` is the Windows launcher and does not exist on macOS or Linux.
 
 ### If `minecode` isn't on PATH
 
