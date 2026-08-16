@@ -11,6 +11,14 @@ import requests
 from typing import Optional, List, Dict, Any
 import re
 
+import logging
+
+from .. import cache
+
+logger = logging.getLogger("minecode.misode")
+
+USER_AGENT = "MineCode/1.0 (+https://github.com/AnCarsenat/minecode-mcp)"
+
 # Base URLs
 MISODE_SITE = "https://misode.github.io"
 GITHUB_RAW = "https://raw.githubusercontent.com/misode/mcmeta"
@@ -53,12 +61,25 @@ GENERATORS = {
 }
 
 
-def _request(url: str, json_response: bool = True) -> Any:
-    """Make HTTP request with error handling."""
-    try:
-        response = requests.get(url, timeout=10)
+def _request(url: str, json_response: bool = True,
+             ttl: int = cache.IMMUTABLE) -> Any:
+    """
+    Make an HTTP request via the disk cache.
+
+    Defaults to IMMUTABLE because most misode URLs are pinned to a released
+    version tag and never change. Index endpoints (version lists, the
+    technical-changes directory listing) pass an explicit TTL.
+    """
+    key = f"misode:{url}:{'json' if json_response else 'text'}"
+
+    def fetch():
+        response = requests.get(url, timeout=20,
+                                headers={"User-Agent": USER_AGENT})
         response.raise_for_status()
         return response.json() if json_response else response.text
+
+    try:
+        return cache.cached_fetch(key, ttl, fetch)
     except Exception as e:
         raise Exception(f"Request failed for {url}: {str(e)}")
 
@@ -91,7 +112,7 @@ def list_versions() -> List[str]:
         
         return []
     except Exception as e:
-        print(f"Error listing versions: {e}")
+        logger.warning("misode request failed: %s", e)
         return []
 
 
@@ -333,14 +354,14 @@ def list_changelog_releases() -> List[str]:
         List of release versions (e.g., ["1.21", "1.20.5", ...])
     """
     try:
-        response = _request(TECHNICAL_CHANGES_API)
+        response = _request(TECHNICAL_CHANGES_API, ttl=cache.TTL_CHANGELOG_INDEX)
         return [
             item["name"]
             for item in response
             if item["type"] == "dir" and not item["name"].startswith(".")
         ]
     except Exception as e:
-        print(f"Error listing changelog releases: {e}")
+        logger.warning("Error listing changelog releases: %s", e)
         return []
 
 
@@ -356,14 +377,14 @@ def list_changelogs(release: str) -> List[str]:
     """
     try:
         url = f"{TECHNICAL_CHANGES_API}/{release}"
-        response = _request(url)
+        response = _request(url, ttl=cache.TTL_CHANGELOG_INDEX)
         return [
             item["name"].replace(".md", "")
             for item in response
             if item["type"] == "file" and item["name"].endswith(".md")
         ]
     except Exception as e:
-        print(f"Error listing changelogs for {release}: {e}")
+        logger.warning("Error listing changelogs for %s: %s", release, e)
         return []
 
 
@@ -400,16 +421,169 @@ def parse_changelog(content: str) -> List[Dict[str, Any]]:
         line = line.strip()
         if not line or '|' not in line:
             continue
-        
+
         tags_part, description = line.split('|', 1)
         tags = [tag.strip() for tag in tags_part.split() if tag.strip()]
-        
+
         entries.append({
             "tags": tags,
             "description": description.strip()
         })
-    
+
     return entries
+
+
+def _release_line(version_id: str) -> Optional[str]:
+    """
+    Map a version ID onto the technical-changes release directory holding it.
+
+    Release IDs ("1.21.4") name their own directory or the directory of their
+    parent line. Snapshot IDs ("24w14a") do not encode their release at all, so
+    for those the caller must fall back to scanning directories.
+    """
+    releases = list_changelog_releases()
+    if not releases:
+        return None
+
+    if version_id in releases:
+        return version_id
+
+    # Longest matching prefix: "1.21.4" lives under "1.21.4" or "1.21".
+    candidates = [r for r in releases if version_id.startswith(r)]
+    if candidates:
+        return max(candidates, key=len)
+
+    return None
+
+
+def _all_changelog_entries() -> List[Dict[str, Any]]:
+    """
+    Build a flat index of every available changelog: release, version, order.
+
+    Cached, because it costs one API call per release directory and the answer
+    only changes when a new snapshot ships.
+    """
+    def build():
+        index = []
+        for release in list_changelog_releases():
+            for version_id in list_changelogs(release):
+                index.append({"release": release, "version": version_id})
+        return index
+
+    return cache.cached_fetch("misode:changelog-index",
+                              cache.TTL_CHANGELOG_INDEX, build)
+
+
+def get_changes_between(from_version: Optional[str], to_version: str,
+                        topic: Optional[str] = None,
+                        max_versions: int = 40) -> Dict[str, Any]:
+    """
+    Collect technical changelog entries across a version range.
+
+    This is the function that answers the question an agent actually has:
+    "my knowledge of Minecraft is older than this pack -- what changed?"
+
+    Args:
+        from_version: Exclusive lower bound. None means "everything up to
+                      to_version", which is right for an agent starting cold.
+        to_version:   Inclusive upper bound, the pack's target version.
+        topic:        Optional case-insensitive filter over tags and text,
+                      e.g. "component", "loot", "text", "recipe".
+        max_versions: Cap on changelog files fetched, so a wide range cannot
+                      turn into hundreds of requests. Truncation is reported,
+                      never silent.
+
+    Returns:
+        Dict with the ordered entries, the versions covered, and -- if the
+        range was capped -- what was left out.
+    """
+    from ..knowledge import parse_version
+
+    index = _all_changelog_entries()
+    if not index:
+        return {
+            "success": False,
+            "error": "no changelogs available (misode/technical-changes unreachable)",
+            "from_version": from_version,
+            "to_version": to_version,
+        }
+
+    to_key = parse_version(to_version)
+    from_key = parse_version(from_version) if from_version else None
+
+    # Filter by the RELEASE the changelog belongs to, not by the changelog's
+    # own version ID. Most entries are snapshots ("24w14a", "1.21.2-pre1")
+    # whose IDs carry no usable ordering against a release number -- comparing
+    # them directly put every snapshot below 1.0 and silently returned nothing.
+    # The containing release directory is the reliable signal: everything under
+    # "1.21/" describes changes that land in 1.21.
+    in_range = []
+    for item in index:
+        release_key = parse_version(item["release"])
+        if release_key > to_key:
+            continue
+        if from_key is not None and release_key <= from_key:
+            continue
+        in_range.append(item)
+
+    # Order by release, then by version ID within the release so snapshots read
+    # in roughly chronological order.
+    in_range.sort(key=lambda i: (parse_version(i["release"]),
+                                 parse_version(i["version"]),
+                                 i["version"]))
+
+    truncated = False
+    omitted: List[str] = []
+    if len(in_range) > max_versions:
+        # Keep the versions NEAREST the target -- those are the ones whose
+        # changes the agent's output must satisfy. Dropping the far end is the
+        # least-bad truncation.
+        omitted = [i["version"] for i in in_range[:-max_versions]]
+        in_range = in_range[-max_versions:]
+        truncated = True
+
+    results = []
+    for item in in_range:
+        content = get_changelog(item["release"], item["version"])
+        if not content:
+            continue
+        entries = parse_changelog(content)
+
+        if topic:
+            t = topic.lower()
+            entries = [
+                e for e in entries
+                if t in e["description"].lower()
+                or any(t in tag.lower() for tag in e["tags"])
+            ]
+
+        if entries:
+            results.append({
+                "version": item["version"],
+                "release": item["release"],
+                "entry_count": len(entries),
+                "entries": entries,
+            })
+
+    total = sum(r["entry_count"] for r in results)
+
+    return {
+        "success": True,
+        "from_version": from_version,
+        "to_version": to_version,
+        "topic": topic,
+        "versions_covered": [r["version"] for r in results],
+        "total_entries": total,
+        "changes": results,
+        "truncated": truncated,
+        "omitted_versions": omitted if truncated else None,
+        "note": (
+            f"Range capped at {max_versions} versions; {len(omitted)} older "
+            "versions were omitted. Narrow from_version to see them."
+            if truncated else None
+        ),
+        "source": "https://github.com/misode/technical-changes",
+    }
 
 
 # ============================================================================
@@ -422,7 +596,7 @@ def get_sitemap() -> List[str]:
         content = _request(GITHUB_SITEMAP, json_response=False)
         return [line.strip() for line in content.split('\n') if line.strip()]
     except Exception as e:
-        print(f"Error fetching sitemap: {e}")
+        logger.warning("misode request failed: %s", e)
         return []
 
 

@@ -1,0 +1,387 @@
+{
+  "schema_version": 1,
+  "_note": [
+    "Hand-curated table of the Minecraft datapack breaking changes that AI agents",
+    "get wrong most often, expressed as before/after code pairs.",
+    "",
+    "This table is deliberately SMALL. It is not, and must never become, an attempt",
+    "to document every version's changes -- misode/technical-changes already does",
+    "that, is maintained by people who track every snapshot, and is reachable via",
+    "the get_technical_changes tool. This file covers only the migrations where a",
+    "model's training data actively fights the correct answer, and where a concrete",
+    "before/after pair corrects it faster than prose.",
+    "",
+    "Every entry carries `verify_with`. Entries are a fast first-pass signal, not an",
+    "authority. When an entry matters to the output, the agent should confirm it",
+    "against the tool named there.",
+    "",
+    "`confidence` is the curator's confidence in the entry as written:",
+    "  high   -- well-known, widely documented change",
+    "  medium -- correct in substance, exact version or field names worth confirming"
+  ],
+
+  "migrations": [
+    {
+      "id": "datapack-folders-singularized",
+      "title": "Datapack folder names became singular",
+      "changed_in": "1.21",
+      "affects": ["folder_structure", "datapack", "tags"],
+      "severity": "breaking",
+      "confidence": "high",
+      "before": "data/<ns>/advancements/  recipes/  loot_tables/  predicates/  item_modifiers/  functions/  structures/  tags/blocks/  tags/items/  tags/entity_types/  tags/functions/",
+      "after": "data/<ns>/advancement/   recipe/   loot_table/   predicate/   item_modifier/   function/   structure/   tags/block/   tags/item/   tags/entity_type/   tags/function/",
+      "explanation": "In 1.21 (pack format 48) every datapack registry directory was renamed to its singular form. A pack using the old plural directories silently loads nothing from them -- there is no error, the content simply does not exist in game. This is the single most common cause of 'my datapack does nothing' on 1.21+.",
+      "detect": [
+        {
+          "pattern": "data/[a-z0-9_.-]+/(advancements|recipes|loot_tables|predicates|item_modifiers|functions|structures)/",
+          "kind": "path",
+          "message": "Plural datapack folder. On 1.21+ these must be singular (advancement, recipe, loot_table, predicate, item_modifier, function, structure)."
+        },
+        {
+          "pattern": "data/[a-z0-9_.-]+/tags/(blocks|items|entity_types|functions|fluids|game_events)/",
+          "kind": "path",
+          "message": "Plural tag folder. On 1.21+ these must be singular (tags/block, tags/item, tags/entity_type, tags/function, tags/fluid, tags/game_event)."
+        }
+      ],
+      "verify_with": "get_technical_changes(from_version='1.20.6', to_version='1.21')"
+    },
+
+    {
+      "id": "item-nbt-to-components",
+      "title": "Item NBT replaced by item components",
+      "changed_in": "1.20.5",
+      "affects": ["give", "item", "loot_table", "recipe", "predicate", "summon", "nbt"],
+      "severity": "breaking",
+      "confidence": "high",
+      "before": "/give @s diamond_sword{Enchantments:[{id:\"minecraft:sharpness\",lvl:5}],display:{Name:'{\"text\":\"Zap\"}'}} 1",
+      "after": "/give @s diamond_sword[enchantments={\"minecraft:sharpness\":5},custom_name={\"text\":\"Zap\"}] 1",
+      "explanation": "1.20.5 replaced the item NBT blob with a typed component map. Curly-brace NBT after an item ID is a hard parse error on 1.20.5+, not a warning -- the command does not run at all. Note the enchantments shape itself changed again later; see 'enchantments-component-shape'.",
+      "detect": [
+        {
+          "pattern": "\\b(give|item|clear|loot|setblock|fill)\\b[^\\n]*?\\b(minecraft:)?[a-z0-9_]+\\{[A-Za-z]",
+          "kind": "command",
+          "message": "Item NBT in braces {}. On 1.20.5+ items take components in brackets [] instead. Look up the correct component with spyglass_get_mcdoc_symbols."
+        },
+        {
+          "pattern": "\"(Enchantments|AttributeModifiers|CustomModelData|Unbreakable|HideFlags)\"\\s*:",
+          "kind": "json",
+          "message": "Pre-1.20.5 item NBT key. On 1.20.5+ use the component equivalents (enchantments, attribute_modifiers, custom_model_data, unbreakable, tooltip_display)."
+        }
+      ],
+      "verify_with": "get_technical_changes(from_version='1.20.4', to_version='1.20.5', topic='component')"
+    },
+
+    {
+      "id": "loot-set-nbt-to-set-components",
+      "title": "Loot function set_nbt replaced by set_components",
+      "changed_in": "1.20.5",
+      "affects": ["loot_table", "item_modifier"],
+      "severity": "breaking",
+      "confidence": "high",
+      "before": "{ \"function\": \"minecraft:set_nbt\", \"tag\": \"{Enchantments:[{id:\\\"minecraft:sharpness\\\",lvl:1}]}\" }",
+      "after": "{ \"function\": \"minecraft:set_components\", \"components\": { \"minecraft:enchantments\": { \"minecraft:sharpness\": 1 } } }",
+      "explanation": "set_nbt was removed in 1.20.5 along with item NBT. A loot table still using it fails to load, which usually takes the whole table with it.",
+      "detect": [
+        {
+          "pattern": "\"minecraft:set_nbt\"|\"set_nbt\"",
+          "kind": "json",
+          "message": "set_nbt was removed in 1.20.5. Use set_components (or set_custom_data for the custom_data component)."
+        }
+      ],
+      "verify_with": "get_technical_changes(from_version='1.20.4', to_version='1.20.5', topic='loot')"
+    },
+
+    {
+      "id": "recipe-result-object",
+      "title": "Recipe result became an object with id and count",
+      "changed_in": "1.20.5",
+      "affects": ["recipe"],
+      "severity": "breaking",
+      "confidence": "high",
+      "before": "\"result\": { \"item\": \"minecraft:diamond_sword\", \"count\": 1 }",
+      "after": "\"result\": { \"id\": \"minecraft:diamond_sword\", \"count\": 1 }",
+      "explanation": "The result field's `item` key was renamed to `id` in 1.20.5, and result gained a `components` key in place of the old `nbt`. Recipes using `item` fail to load.",
+      "detect": [
+        {
+          "pattern": "\"result\"\\s*:\\s*\\{[^}]*\"item\"\\s*:",
+          "kind": "json",
+          "message": "Recipe result uses \"item\". On 1.20.5+ the key is \"id\"."
+        },
+        {
+          "pattern": "\"result\"\\s*:\\s*\"minecraft:",
+          "kind": "json",
+          "message": "Recipe result is a bare string. On 1.20.5+ it must be an object with \"id\" (and optional \"count\")."
+        }
+      ],
+      "verify_with": "misode_get_preset_data(version='<target>', generator_type='recipe', preset_id='<any>')"
+    },
+
+    {
+      "id": "attribute-name-prefixes-dropped",
+      "title": "Attribute IDs lost their generic./horse./player./zombie. prefixes",
+      "changed_in": "1.21.2",
+      "affects": ["attribute", "attribute_modifiers", "summon", "loot_table"],
+      "severity": "breaking",
+      "confidence": "high",
+      "before": "/attribute @s minecraft:generic.max_health base set 40",
+      "after": "/attribute @s minecraft:max_health base set 40",
+      "explanation": "1.21.2 flattened the attribute registry. generic.max_health became max_health, generic.movement_speed became movement_speed, horse.jump_strength became jump_strength, and so on. The old IDs are not recognised.",
+      "detect": [
+        {
+          "pattern": "\\b(generic|horse|player|zombie)\\.(max_health|movement_speed|attack_damage|attack_speed|armor|armor_toughness|knockback_resistance|luck|follow_range|jump_strength|spawn_reinforcements|max_absorption|attack_knockback|flying_speed|block_interaction_range|entity_interaction_range)\\b",
+          "kind": "any",
+          "message": "Prefixed attribute ID. On 1.21.2+ the generic./horse./player./zombie. prefix was dropped."
+        }
+      ],
+      "verify_with": "spyglass_get_registries(version='<target>', registry='attribute')"
+    },
+
+    {
+      "id": "attribute-modifier-fields",
+      "title": "Attribute modifier fields renamed and UUID replaced by a namespaced id",
+      "changed_in": "1.21",
+      "affects": ["attribute_modifiers", "summon", "item"],
+      "severity": "breaking",
+      "confidence": "medium",
+      "before": "{ \"AttributeName\": \"generic.attack_damage\", \"Amount\": 5, \"Operation\": 0, \"UUID\": [I; 1, 2, 3, 4], \"Slot\": \"mainhand\" }",
+      "after": "{ \"type\": \"attack_damage\", \"amount\": 5, \"operation\": \"add_value\", \"id\": \"mypack:big_damage\", \"slot\": \"mainhand\" }",
+      "explanation": "Attribute modifiers moved to lowercase field names in 1.20.5, operations became strings (add_value, add_multiplied_base, add_multiplied_total) instead of the integers 0/1/2, and in 1.21 the UUID array was replaced by a namespaced string id. Confirm the exact version for your target -- the field rename and the UUID change did not land together.",
+      "detect": [
+        {
+          "pattern": "\"(AttributeName|Amount|Operation|UUID)\"\\s*:",
+          "kind": "json",
+          "message": "Capitalised attribute modifier field. Modern packs use type/amount/operation/id/slot in lowercase."
+        },
+        {
+          "pattern": "\"operation\"\\s*:\\s*[0-2]\\b",
+          "kind": "json",
+          "message": "Numeric operation. Use the string form: add_value, add_multiplied_base, or add_multiplied_total."
+        }
+      ],
+      "verify_with": "spyglass_get_mcdoc_symbols(symbol='java::world::item::component::AttributeModifiers')"
+    },
+
+    {
+      "id": "enchantments-component-shape",
+      "title": "The enchantments component dropped its levels wrapper",
+      "changed_in": "1.21.5",
+      "affects": ["enchantments", "give", "item", "loot_table"],
+      "severity": "breaking",
+      "confidence": "medium",
+      "before": "[enchantments={levels:{\"minecraft:sharpness\":5},show_in_tooltip:false}]",
+      "after": "[enchantments={\"minecraft:sharpness\":5},tooltip_display={hidden_components:[\"minecraft:enchantments\"]}]",
+      "explanation": "1.21.5 flattened the enchantments component so it is the level map directly, and moved per-component tooltip hiding out into the separate minecraft:tooltip_display component. show_in_tooltip was removed from enchantments, attribute_modifiers, unbreakable, dyed_color, trim, and others at the same time. Confirm the exact target version before applying.",
+      "detect": [
+        {
+          "pattern": "enchantments\\s*=\\s*\\{\\s*levels\\s*:",
+          "kind": "command",
+          "message": "enchantments={levels:{...}} is the 1.20.5-1.21.4 shape. On 1.21.5+ the component is the level map directly."
+        },
+        {
+          "pattern": "show_in_tooltip",
+          "kind": "any",
+          "message": "show_in_tooltip was removed from item components in 1.21.5. Use the minecraft:tooltip_display component instead."
+        }
+      ],
+      "verify_with": "get_technical_changes(from_version='1.21.4', to_version='1.21.5', topic='component')"
+    },
+
+    {
+      "id": "custom-model-data-object",
+      "title": "custom_model_data changed from an integer to an object",
+      "changed_in": "1.21.4",
+      "affects": ["custom_model_data", "resource_pack", "item"],
+      "severity": "breaking",
+      "confidence": "medium",
+      "before": "[custom_model_data=3]",
+      "after": "[custom_model_data={floats:[3.0]}]",
+      "explanation": "1.21.4 turned custom_model_data into an object carrying parallel floats/flags/strings/colors lists, alongside the new item model definition system in resource packs. A bare integer no longer validates. Resource pack predicates keyed on the old integer also need migrating.",
+      "detect": [
+        {
+          "pattern": "custom_model_data\\s*=\\s*\\d+(?!\\s*\\.)",
+          "kind": "command",
+          "message": "Integer custom_model_data. On 1.21.4+ this component is an object, e.g. {floats:[3.0]}."
+        }
+      ],
+      "verify_with": "get_technical_changes(from_version='1.21.3', to_version='1.21.4', topic='model')"
+    },
+
+    {
+      "id": "text-component-strictness",
+      "title": "Text component parsing became strict",
+      "changed_in": "1.21.5",
+      "affects": ["tellraw", "title", "text_component", "custom_name", "lore", "sign"],
+      "severity": "breaking",
+      "confidence": "medium",
+      "before": "/tellraw @a {\"text\":\"Score: \",\"extra\":[{\"score\":{\"name\":\"@s\",\"objective\":\"pts\"}}],\"bold\":\"true\"}",
+      "after": "/tellraw @a {\"text\":\"Score: \",\"extra\":[{\"score\":{\"name\":\"@s\",\"objective\":\"pts\"}}],\"bold\":true}",
+      "explanation": "Text components historically accepted loose types -- the string \"true\" where a boolean was expected, a number where a string was expected. 1.21.5 tightened this and such coercions are now errors. Commands also accept SNBT text components directly, so the outer value need not be a quoted JSON string. Older versions are lenient, so the same component can work on 1.20 and fail on 1.21.5.",
+      "detect": [
+        {
+          "pattern": "\"(bold|italic|underlined|strikethrough|obfuscated)\"\\s*:\\s*\"(true|false)\"",
+          "kind": "json",
+          "message": "Boolean text component field given as a quoted string. On 1.21.5+ this must be a real boolean."
+        }
+      ],
+      "verify_with": "get_technical_changes(from_version='1.21.4', to_version='1.21.5', topic='text')"
+    },
+
+    {
+      "id": "predicate-item-nbt-to-components",
+      "title": "Item predicates match components, not NBT",
+      "changed_in": "1.20.5",
+      "affects": ["predicate", "advancement", "loot_table"],
+      "severity": "breaking",
+      "confidence": "high",
+      "before": "{ \"items\": [\"minecraft:diamond_sword\"], \"nbt\": \"{Damage:0}\" }",
+      "after": "{ \"items\": \"minecraft:diamond_sword\", \"predicates\": { \"minecraft:damage\": { \"durability\": { \"min\": 1561 } } } }",
+      "explanation": "Item predicates lost the `nbt` string match in 1.20.5. Component-based matching uses `components` for exact equality or `predicates` for partial/ranged matching. The `items` field also accepts a single ID or a tag reference now, not only an array.",
+      "detect": [
+        {
+          "pattern": "\"items\"\\s*:[^}]{0,200}?\"nbt\"\\s*:",
+          "kind": "json",
+          "message": "Item predicate using \"nbt\". On 1.20.5+ use \"components\" (exact) or \"predicates\" (partial/ranged)."
+        }
+      ],
+      "verify_with": "spyglass_get_mcdoc_symbols(symbol='java::data::advancement::predicate::ItemPredicate')"
+    },
+
+    {
+      "id": "pack-mcmeta-supported-formats",
+      "title": "pack.mcmeta gained supported_formats for multi-version packs",
+      "changed_in": "1.20.2",
+      "affects": ["pack.mcmeta", "multi_version"],
+      "severity": "additive",
+      "confidence": "high",
+      "before": "{ \"pack\": { \"pack_format\": 48, \"description\": \"My pack\" } }",
+      "after": "{ \"pack\": { \"pack_format\": 48, \"supported_formats\": { \"min_inclusive\": 48, \"max_inclusive\": 61 }, \"description\": \"My pack\" } }",
+      "explanation": "Since 1.20.2 a pack can declare a range of formats it supports, suppressing the 'made for a different version' warning across that range. This is additive, not breaking -- but a pack that only sets pack_format is treated as single-version, which is the usual reason a working pack shows an incompatibility warning.",
+      "detect": [],
+      "verify_with": "get_technical_changes(from_version='1.20.1', to_version='1.20.2', topic='pack')"
+    },
+
+    {
+      "id": "enchantment-datapack-registry",
+      "title": "Enchantments became datapack-defined",
+      "changed_in": "1.21",
+      "affects": ["enchantment", "datapack"],
+      "severity": "additive",
+      "confidence": "high",
+      "before": "Enchantments were hardcoded; datapacks could only reference the vanilla list.",
+      "after": "data/<ns>/enchantment/<name>.json defines a custom enchantment, with effects driven by the enchantment effect component system.",
+      "explanation": "1.21 moved enchantments into a datapack registry. This unlocked custom enchantments, but it also means vanilla enchantment definitions can now be overridden -- and that a datapack overriding one changes it for every pack in the world.",
+      "detect": [],
+      "verify_with": "misode_get_presets(version='<target>', generator_type='enchantment')"
+    },
+
+    {
+      "id": "food-component-split",
+      "title": "The food component was split, with consumable behaviour moved out",
+      "changed_in": "1.21.2",
+      "affects": ["food", "consumable", "item"],
+      "severity": "breaking",
+      "confidence": "medium",
+      "before": "[food={nutrition:4,saturation_modifier:0.3,eat_seconds:1.6,effects:[...]}]",
+      "after": "[food={nutrition:4,saturation:0.3},consumable={consume_seconds:1.6,on_consume_effects:[...]}]",
+      "explanation": "1.21.2 narrowed minecraft:food to nutrition/saturation/can_always_eat and moved timing, sound, animation, and consume effects into the new minecraft:consumable component. saturation_modifier was also renamed to saturation. Verify field names against mcdoc for your exact version.",
+      "detect": [
+        {
+          "pattern": "saturation_modifier|eat_seconds",
+          "kind": "any",
+          "message": "Pre-1.21.2 food component field. saturation_modifier became saturation; eat_seconds moved to the consumable component as consume_seconds."
+        }
+      ],
+      "verify_with": "spyglass_get_mcdoc_symbols(symbol='java::world::item::component::Food')"
+    },
+
+    {
+      "id": "loot-table-type-required",
+      "title": "Loot tables require a type field",
+      "changed_in": "1.20.5",
+      "affects": ["loot_table"],
+      "severity": "breaking",
+      "confidence": "medium",
+      "before": "{ \"pools\": [ ... ] }",
+      "after": "{ \"type\": \"minecraft:chest\", \"pools\": [ ... ] }",
+      "explanation": "The loot table `type` field (chest, block, entity, generic, advancement_reward, ...) became required. A table without it fails validation. Confirm the exact version this became mandatory for your target.",
+      "detect": [],
+      "verify_with": "misode_get_preset_data(version='<target>', generator_type='loot_table', preset_id='chests/simple_dungeon')"
+    },
+
+    {
+      "id": "function-macros",
+      "title": "Function macros added",
+      "changed_in": "1.20.2",
+      "affects": ["function", "mcfunction"],
+      "severity": "additive",
+      "confidence": "high",
+      "before": "No macro support; values had to be baked in or driven through scoreboards and storage.",
+      "after": "$say Hello $(player)   -- invoked with: function ns:greet {player:\"Steve\"}",
+      "explanation": "Lines beginning with $ are macro lines, substituted at call time from the passed compound or from storage via `with`. Available since 1.20.2 (pack format 18). Using them in a pack that declares an older format will not work.",
+      "detect": [],
+      "verify_with": "get_technical_changes(from_version='1.20.1', to_version='1.20.2', topic='function')"
+    },
+
+    {
+      "id": "namespace-required",
+      "title": "Bare IDs without a namespace are rejected in more places over time",
+      "changed_in": "various",
+      "affects": ["json", "datapack", "tags"],
+      "severity": "advisory",
+      "confidence": "high",
+      "before": "\"item\": \"diamond_sword\"",
+      "after": "\"item\": \"minecraft:diamond_sword\"",
+      "explanation": "Minecraft has progressively tightened where an unqualified ID is accepted. There is no single version to point at, and behaviour differs per field. Always write the namespace explicitly -- it is valid in every version and removes the whole class of problem.",
+      "detect": [],
+      "verify_with": "spyglass_get_registries(version='<target>', registry='item')"
+    }
+  ],
+
+  "version_notes": [
+    {
+      "version": "1.20.5",
+      "headline": "The components rewrite. The largest datapack break in years.",
+      "watch_for": [
+        "Item NBT no longer parses at all -- it is a syntax error, not a warning",
+        "set_nbt removed from loot functions",
+        "Recipe result.item renamed to result.id",
+        "Item predicates match components instead of an NBT string",
+        "Attribute modifier fields lowercased, operations became strings"
+      ]
+    },
+    {
+      "version": "1.21",
+      "headline": "Datapack folders singularized. Enchantments became datapack-defined.",
+      "watch_for": [
+        "advancements/ recipes/ loot_tables/ predicates/ functions/ and the tags/ subfolders all became singular",
+        "A pack with the old plural folders loads silently with nothing in it",
+        "Attribute modifier UUID arrays replaced by namespaced string ids"
+      ]
+    },
+    {
+      "version": "1.21.2",
+      "headline": "Attribute IDs flattened; food split from consumable.",
+      "watch_for": [
+        "generic.max_health became max_health across every attribute",
+        "minecraft:food narrowed; timing and effects moved to minecraft:consumable"
+      ]
+    },
+    {
+      "version": "1.21.4",
+      "headline": "Item model definitions; custom_model_data became an object.",
+      "watch_for": [
+        "Integer custom_model_data no longer validates",
+        "Resource pack item overrides replaced by the items/ model definition system"
+      ]
+    },
+    {
+      "version": "1.21.5",
+      "headline": "Text components strict-typed; component tooltip control centralised.",
+      "watch_for": [
+        "Loose type coercion in text components is now an error",
+        "show_in_tooltip removed from individual components in favour of minecraft:tooltip_display",
+        "enchantments component flattened -- no more levels wrapper"
+      ]
+    }
+  ]
+}

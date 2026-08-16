@@ -1,37 +1,102 @@
 name: Publish to PyPI
 
+# Uses PyPI Trusted Publishing (OIDC). There is NO API token anywhere in this
+# workflow and no PYPI_API_TOKEN secret to create, paste, rotate, or leak --
+# GitHub proves its identity to PyPI directly.
+#
+# One-time setup is required before the first run. See "PyPI publishing" in
+# readme.md for the exact steps and field values.
+
 on:
   push:
     tags:
       - 'v*.*.*'
-
-permissions:
-  contents: write
+  workflow_dispatch: {}
 
 jobs:
-  build-and-publish:
+  build:
+    name: Build distributions
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install build tools
+      - name: Install build tooling
         run: |
           python -m pip install --upgrade pip
           python -m pip install build twine
 
-      - name: Build distributions
+      - name: Verify the tag matches the version in pyproject.toml
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          PKG=$(python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          echo "tag=$TAG pyproject=$PKG"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::Tag v$TAG does not match pyproject.toml version $PKG"
+            exit 1
+          fi
+
+      - name: Run tests before publishing
+        run: |
+          python -m pip install -e ".[dev]"
+          MINECODE_NO_CACHE=1 python -m pytest tests/ -q -m "not network"
+
+      - name: Build
         run: python -m build
 
-      - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Check package metadata
+        run: python -m twine check dist/*
+
+      - name: Verify data files are present in the wheel
+        # The preprompt, config, and migration table are data files. If they
+        # are dropped, the server still starts but silently loses its version
+        # knowledge -- invisible in an editable install, broken for every
+        # pip-installed user. Fail the build rather than ship that.
         run: |
-          python -m twine upload --non-interactive dist/*
+          python -m pip install --upgrade wheel
+          WHEEL=$(ls dist/*.whl)
+          echo "Inspecting $WHEEL"
+          CONTENTS=$(python -c "import zipfile,sys; print('\n'.join(zipfile.ZipFile(sys.argv[1]).namelist()))" "$WHEEL")
+          echo "$CONTENTS"
+          for required in \
+            "minecode/preprompts/assistant_preprompt.txt" \
+            "minecode/config/config.json" \
+            "minecode/knowledge/migrations.json"
+          do
+            if ! echo "$CONTENTS" | grep -q "$required"; then
+              echo "::error::$required is missing from the wheel"
+              exit 1
+            fi
+            echo "ok: $required"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/minecode-mcp
+    permissions:
+      # REQUIRED for trusted publishing. Without it OIDC fails with an opaque
+      # 403. It must be on this job, not at the workflow root.
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1

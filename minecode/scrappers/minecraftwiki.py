@@ -1,17 +1,56 @@
 """
 Minecraft.wiki API Client for Minecraft wiki pages
 Uses the MediaWiki API: https://www.mediawiki.org/wiki/API:Main_page
+
+IMPORTANT LIMITATION -- read before using anything here.
+
+minecraft.wiki documents the LATEST version of the game only. It carries no
+per-version history for command syntax, JSON schemas, NBT structure, or item
+IDs. Every function in this module therefore returns latest-version content,
+regardless of what version the caller is working on.
+
+That is the single largest source of wrong output in this project: an agent
+asks the wiki for /give syntax, gets the current component syntax back, and
+writes it into a 1.20.4 pack where it is a parse error.
+
+Use this module for CONCEPTUAL questions ("how does a raid work", "what
+triggers a piglin barter"). For anything version-sensitive, use spyglass
+(authoritative, version-exact) or misode (vanilla presets per version).
+
+Every public function's result is wrapped with a version warning by the server
+layer -- see WIKI_VERSION_WARNING.
 """
 
+import logging
 import requests
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 import re
 
+from .. import cache
+
+logger = logging.getLogger("minecode.wiki")
+
 BASE_URL = "https://minecraft.wiki"
 API_URL = "https://minecraft.wiki/api.php"
 PAGE_URL = "https://minecraft.wiki/w/"
+
+USER_AGENT = "MineCode/1.0 (+https://github.com/AnCarsenat/minecode-mcp)"
+
+# Attached to every wiki tool response. Descriptions get skimmed; payload
+# fields get read, so the warning travels with the data rather than sitting
+# only in the tool schema.
+WIKI_VERSION_WARNING = (
+    "minecraft.wiki documents the LATEST Minecraft version only. It has no "
+    "per-version history. If your target version is not the current release, "
+    "treat all syntax, JSON schemas, NBT structure, and IDs in this result as "
+    "POSSIBLY WRONG until confirmed against a version-exact source: "
+    "spyglass_get_commands / spyglass_get_registries / spyglass_get_mcdoc_symbol "
+    "for syntax and schemas, misode_get_preset_data for vanilla examples, and "
+    "get_technical_changes to see what moved between versions. "
+    "This content is reliable for CONCEPTS and game mechanics, not for syntax."
+)
 
 
 # ============================================================================
@@ -57,11 +96,18 @@ class CommandInfo:
 # ============================================================================
 
 def _make_request(params: dict) -> dict:
-    """Make a request to the MediaWiki API"""
+    """Make a request to the MediaWiki API, via the disk cache."""
     params["format"] = "json"
-    response = requests.get(API_URL, params=params, timeout=15)
-    response.raise_for_status()
-    return response.json()
+    key = f"wiki:{sorted(params.items())}"
+
+    def fetch():
+        response = requests.get(API_URL, params=params, timeout=15,
+                                headers={"User-Agent": USER_AGENT})
+        response.raise_for_status()
+        return response.json()
+
+    # Wiki content changes, so this is a TTL cache rather than immutable.
+    return cache.cached_fetch(key, cache.TTL_WIKI, fetch)
 
 
 def search(query: str, limit: int = 10) -> List[SearchResult]:
@@ -249,9 +295,13 @@ def get_page_sections(title: str) -> List[Dict[str, Any]]:
     
     try:
         data = _make_request(params)
-    except:
+    except Exception as e:
+        # A bare `except:` here previously swallowed KeyboardInterrupt and
+        # SystemExit along with real errors, making the server unkillable
+        # mid-request.
+        logger.warning("Failed to fetch sections for %r: %s", title, e)
         return []
-    
+
     return [
         {"index": s["index"], "level": int(s["level"]), "name": s["line"]}
         for s in data.get("parse", {}).get("sections", [])

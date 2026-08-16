@@ -4,12 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "minecode-mcp"
-version = "0.1.9"
+version = "0.2.0"
 description = "MCP Server for Minecraft datapack development with wiki, Spyglass, Misode, and Mojira integrations"
 readme = "readme.md"
 license = "MIT"
 authors = [
-    { name = "Ancarsenat", email = "antoine.carsenat@example.com" }
+    { name = "AnCarsenat" }
 ]
 keywords = ["minecraft", "mcp", "datapack", "copilot", "ai"]
 classifiers = [
@@ -24,9 +24,20 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "mcp>=1.25.0",
+    # Upper bound is deliberate. mcp 2.0 removed the low-level decorator API
+    # (@server.list_tools / @server.call_tool) that this server is built on;
+    # installing 2.x raises AttributeError at import. Migrating to the 2.x
+    # MCPServer API is a separate piece of work -- until then, pin.
+    "mcp>=1.25.0,<2",
     "requests>=2.31.0",
     "beautifulsoup4>=4.12.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "build>=1.0",
+    "twine>=5.0",
 ]
 
 [project.urls]
@@ -39,13 +50,30 @@ minecode = "minecode.server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["minecode"]
+# The preprompt, config, and migration table are data files, not Python. If
+# they are missing from the wheel the server still starts but silently loses
+# its version knowledge -- a failure invisible in a local editable install and
+# only visible to pip-installed users. Listed explicitly so a packaging change
+# cannot drop them.
+artifacts = [
+    "minecode/preprompts/*.txt",
+    "minecode/config/*.json",
+    "minecode/knowledge/*.json",
+]
 
 [tool.hatch.build.targets.sdist]
 include = [
     "minecode/",
+    "tests/",
     "readme.md",
     "LICENSE",
     "example/",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "network: test requires network access (deselect with -m 'not network')",
 ]
 
 
