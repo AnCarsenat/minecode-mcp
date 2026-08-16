@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "minecode-mcp"
 version = "0.2.0"
 description = "MCP Server for Minecraft datapack development with wiki, Spyglass, Misode, and Mojira integrations"
-readme = "readme.md"
+readme = "README.md"
 license = "MIT"
 authors = [
     { name = "AnCarsenat" }
@@ -65,7 +65,7 @@ artifacts = [
 include = [
     "minecode/",
     "tests/",
-    "readme.md",
+    "README.md",
     "LICENSE",
     "example/",
 ]

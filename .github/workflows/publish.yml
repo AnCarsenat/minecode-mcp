@@ -5,7 +5,7 @@ name: Publish to PyPI
 # GitHub proves its identity to PyPI directly.
 #
 # One-time setup is required before the first run. See "PyPI publishing" in
-# readme.md for the exact steps and field values.
+# README.md for the exact steps and field values.
 
 on:
   push:
