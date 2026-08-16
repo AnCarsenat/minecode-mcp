@@ -25,7 +25,7 @@
 
 MineCode is a **local** [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that gives AI assistants like **GitHub Copilot** and **Claude** real-time access to version-accurate Minecraft data, documentation, vanilla presets, and your Minecraft logs.
 
-Written for a hackathon about MCP sponsored by dust, alpic, and others. Please star if you'd like to help out, and open issues for anything broken.
+Written for a hackathon about MCP sponsored by dust, alpic, and others. Prototyped using the worst ai model ;-; (note I rewrote it now it is actually viable). Please star if you'd like to help out, and open issues for anything broken.
 
 ![example](https://github.com/AnCarsenat/minecode-mcp/raw/main/assets/readme/example6.png)
 
