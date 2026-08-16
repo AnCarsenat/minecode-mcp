@@ -217,6 +217,7 @@ Configure your client (next section), then restart it. The client spawns the ser
 | `command not found: minecode` | The script isn't on PATH. Use `python -m minecode.server`, or check `pip show -f minecode-mcp` |
 | `No module named minecode` | Wrong interpreter. The client's `python` isn't the one you installed into — classic with pipx and venv installs. Use `"command": "minecode"` in the client config, or the interpreter's absolute path |
 | `Error while finding module specification for 'minecode'` | `-m minecode` is not a valid entry point. The module form is `-m minecode.server` |
+| `spawn minecode ENOENT` (works in a terminal, not in the editor) | `~/.local/bin` is on PATH only for shells — your `.bashrc`/`.zshrc` adds it, the desktop launcher does not, so an editor started from the applications menu can't resolve the bare name. Use the **absolute** path in the client config: `"command": "/home/you/.local/bin/minecode"`. To fix it for every GUI app instead, add `PATH=$HOME/.local/bin:$PATH` to `~/.config/environment.d/local-bin.conf` (systemd user sessions) and log out and back in |
 | `AttributeError: 'Server' object has no attribute 'list_tools'` | You have mcp 2.x. Run `pip install "mcp>=1.25.0,<2"` |
 | Server starts, client shows no tools | Client config points at a different Python or a stale install. Restart the client fully — most only read MCP config at startup |
 | Everything hangs with no output | Expected when run directly, see above. If it happens *inside a client*, check the client's MCP logs |
