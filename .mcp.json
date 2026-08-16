@@ -1,9 +1,25 @@
 {
-  "name": "minecode-debug",
-  "transport": "stdio",
-  "command": "${command:python.interpreterPath}",
-  "args": ["-m", "minecode.server"],
-  "cwd": ".",
-  "env": {},
-  "description": "Configuration for launching the MineCode MCP server via stdio. Use an MCP-capable client or VS Code extension to start/connect."
+  "mcpServers": {
+    "minecode": {
+      "command": "minecode",
+      "args": [],
+      "env": {}
+    }
+  },
+  "_comment": [
+    "Generic MCP client configuration for MineCode, usable by Claude Desktop,",
+    "Claude Code, and any other MCP-capable client.",
+    "",
+    "This previously used \"${command:python.interpreterPath}\", which is a VS Code",
+    "variable substitution. It resolves only inside VS Code; every other client",
+    "tried to execute a program literally named",
+    "\"${command:python.interpreterPath}\" and failed with a confusing error.",
+    "",
+    "The VS Code-specific configuration lives in .vscode/mcp.json, where that",
+    "substitution syntax is understood.",
+    "",
+    "\"minecode\" is the console script installed by `pip install minecode-mcp`.",
+    "If it is not on PATH, replace command with your Python and use",
+    "args: [\"-m\", \"minecode.server\"]."
+  ]
 }
