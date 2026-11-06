@@ -22,7 +22,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
-from . import brigadier, cache, knowledge, packmeta
+from . import brigadier, cache, guides, knowledge, packmeta
 from .scrappers import minecraft_logs, minecraftwiki, misode, mojira, spyglass
 
 logger = logging.getLogger("minecode.handlers")
@@ -106,6 +106,7 @@ def handle_minecraft_start_session(workspace_path: Optional[str] = None) -> dict
             "Once you know the version, call get_technical_changes(to_version=...) "
             "before writing anything.",
         ]
+        _add_guides(result)
         return result
 
     result["target_version"] = version
@@ -148,7 +149,20 @@ def handle_minecraft_start_session(workspace_path: Optional[str] = None) -> dict
             "both ends of the range before committing to a syntax."
         )
 
+    _add_guides(result)
     return result
+
+
+def _add_guides(result: Dict[str, Any]) -> None:
+    """Point at the step-by-step guides; the agent fetches the one it needs."""
+    available = guides.index()
+    if available:
+        result["guides"] = available
+        result["instructions"].append(
+            "Step-by-step guides are available: call get_minecode_guide(topic) -- "
+            "'minecraft-feature-workflow' before implementing something, "
+            "'minecraft-diagnose' when something does not work."
+        )
 
 
 # ===========================================================================
@@ -946,6 +960,26 @@ def handle_get_logs(launcher: Optional[str] = None, instance: Optional[str] = No
         return result
     except Exception as e:
         return _fail(str(e))
+
+
+def handle_get_minecode_guide(topic: Optional[str] = None) -> dict:
+    """
+    Return one of the skills in skills/ as text, or the list of them.
+
+    Claude Code loads these as skills on its own; every other MCP client only
+    ever sees them through this tool (or the matching prompt/resource).
+    """
+    available = guides.index()
+    if not available:
+        return _fail("no guides are installed with this copy of minecode-mcp")
+    if not topic:
+        return {"success": True, "guides": available,
+                "note": "Call again with topic=<one of these> for the full text."}
+    guide = guides.get(topic)
+    if guide is None:
+        return _fail(f"unknown guide {topic!r}", guides=available)
+    return {"success": True, "topic": guide["name"],
+            "description": guide["description"], "guide": guide["body"]}
 
 
 def handle_cache_status(clear: bool = False) -> dict:

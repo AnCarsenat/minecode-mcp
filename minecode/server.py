@@ -41,6 +41,7 @@ from mcp.types import (
     Tool,
 )
 
+from . import guides
 from .tools import HANDLERS, TOOLS
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
@@ -182,13 +183,37 @@ _PROMPTS = [
 ]
 
 
+def _guide_prompt_name(topic: str) -> str:
+    return f"guide_{topic.replace('-', '_')}"
+
+
+def _guide_prompts() -> list[Prompt]:
+    return [
+        Prompt(name=_guide_prompt_name(g["topic"]),
+               description=g["description"], arguments=[])
+        for g in guides.index()
+    ]
+
+
 @server.list_prompts()
 async def list_prompts() -> list[Prompt]:
-    return _PROMPTS
+    return _PROMPTS + _guide_prompts()
 
 
 @server.get_prompt()
 async def get_prompt(name: str, arguments: dict | None = None) -> GetPromptResult:
+    if name.startswith("guide_"):
+        # match on the listed name, so a topic containing '_' still round-trips
+        topic = next((g["topic"] for g in guides.index()
+                      if _guide_prompt_name(g["topic"]) == name), None)
+        guide = guides.get(topic) if topic else None
+        if guide is None:
+            raise ValueError(f"Unknown prompt: {name}")
+        return GetPromptResult(
+            description=guide["description"],
+            messages=[PromptMessage(role="user",
+                                    content=TextContent(type="text", text=guide["body"]))],
+        )
     if name != "minecraft_datapack_session":
         raise ValueError(f"Unknown prompt: {name}")
 
@@ -229,9 +254,17 @@ _RESOURCES = [
 ]
 
 
+def _guide_resources() -> list[Resource]:
+    return [
+        Resource(uri=f"minecode://guide/{g['topic']}", name=f"Guide: {g['topic']}",
+                 description=g["description"], mimeType="text/markdown")
+        for g in guides.index()
+    ]
+
+
 @server.list_resources()
 async def list_resources() -> list[Resource]:
-    return _RESOURCES
+    return _RESOURCES + _guide_resources()
 
 
 @server.read_resource()
@@ -247,6 +280,11 @@ async def read_resource(uri: Any) -> str:
             return path.read_text(encoding="utf-8")
         except Exception as e:
             return json.dumps({"error": f"could not read migrations.json: {e}"})
+
+    if uri.startswith("minecode://guide/"):
+        guide = guides.get(uri)
+        if guide is not None:
+            return guide["body"]
 
     raise ValueError(f"Unknown resource: {uri}")
 

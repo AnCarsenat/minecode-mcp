@@ -378,6 +378,7 @@ Get the exact path with `python3 -c "import sys; print(sys.executable)"` **from 
 |------|-------------|
 | `search_mojira` | Bug tracker search (filters by project, not version) |
 | `get_logs` | Local Minecraft logs, with `filter='errors'` |
+| `get_minecode_guide` | Step-by-step guides (the [skills](#-skills)) for any MCP client |
 | `cache_status` | Inspect or clear the response cache |
 
 ### Prompts and resources
@@ -387,6 +388,43 @@ Get the exact path with `python3 -c "import sys; print(sys.executable)"` **from 
 | Prompt | `minecraft_datapack_session` | Loads the development methodology |
 | Resource | `minecode://preprompt` | Same methodology, attachable as context |
 | Resource | `minecode://migrations` | The curated migration table as JSON |
+| Prompt | `guide_<name>` | One per [skill](#-skills), e.g. `guide_minecraft_diagnose` |
+| Resource | `minecode://guide/<name>` | The same guides, attachable as context |
+
+---
+
+## 🧭 Skills
+
+Six guides written for AI agents live in [`skills/`](skills/), one folder
+each with a `SKILL.md`:
+
+| Skill | Use it when |
+|-------|-------------|
+| [`minecode-mcp`](skills/minecode-mcp/SKILL.md) | choosing which MineCode tool answers a question, and in what order |
+| [`minecraft-feature-workflow`](skills/minecraft-feature-workflow/SKILL.md) | implementing a feature in a datapack, from version pinning to verified hand-over |
+| [`minecraft-diagnose`](skills/minecraft-diagnose/SKILL.md) | a pack does nothing, errors, misbehaves, lags, or broke after an upgrade |
+| [`minecraft-recurring-issues`](skills/minecraft-recurring-issues/SKILL.md) | reviewing code against the mistakes that keep coming back |
+| [`minecraft-version-differences`](skills/minecraft-version-differences/SKILL.md) | targeting, porting, or supporting a range of versions |
+| [`datapack-emulator`](skills/datapack-emulator/SKILL.md) | running and testing a pack without the game |
+
+**Claude Code** loads them as skills when the repository is installed as a
+plugin (this also registers the MCP server from `.mcp.json`, so `minecode`
+must be on PATH — see [Installation](#-installation)):
+
+```text
+/plugin marketplace add AnCarsenat/minecode-mcp
+/plugin install minecode@minecode
+```
+
+**Every other MCP client** gets the same text through the server: the
+`get_minecode_guide` tool (agents call it themselves —
+`minecraft_start_session` points at it), a `guide_<name>` prompt, and a
+`minecode://guide/<name>` resource. The wheel carries `skills/` inside the
+package, so a plain `pip install minecode-mcp` has them too.
+
+To add a guide: create `skills/<name>/SKILL.md` with `name` and
+`description` frontmatter (the description is what an agent chooses by — say
+*when* to use it). `tests/test_guides.py` checks it is found and served.
 
 ---
 
@@ -700,6 +738,7 @@ This catches packaging errors before they reach real PyPI, where a version numbe
 minecode-mcp/
 ├── minecode/
 │   ├── server.py              # Transport, dispatch, prompts, resources
+│   ├── guides.py              # Serves skills/ as a tool, prompts, resources
 │   ├── tools.py               # Tool schemas + name->handler registry
 │   ├── handlers.py            # Tool behaviour
 │   ├── brigadier.py           # Command tree rendering and validation
@@ -717,6 +756,8 @@ minecode-mcp/
 │       ├── minecraftwiki.py   # Wiki (latest version only)
 │       ├── mojira.py          # Bug tracker
 │       └── minecraft_logs.py  # Multi-launcher log reader
+├── skills/<name>/SKILL.md     # Agent guides (Claude Code skills; also served over MCP)
+├── .claude-plugin/            # Claude Code plugin + marketplace manifest
 ├── tests/
 ├── example/crystal_dimension/
 └── pyproject.toml
