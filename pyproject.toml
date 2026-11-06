@@ -1,5 +1,7 @@
 [build-system]
-requires = ["hatchling"]
+# 1.27 is the first hatchling that writes the PEP 639 License-Expression
+# field that `license = "GPL-3.0-only"` needs.
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -10,7 +12,7 @@ name = "minecode-mcp"
 # so a forgotten bump fails loudly instead of shipping a mislabelled release.
 # PyPI version numbers are permanent -- a published version can never be
 # replaced, only superseded. See "Releasing" in README.md.
-version = "0.2.2"
+version = "0.3.0"
 description = "MCP Server for Minecraft datapack development with wiki, Spyglass, Misode, and Mojira integrations"
 readme = "README.md"
 license = "GPL-3.0-only"
@@ -35,15 +37,13 @@ dependencies = [
     # MCPServer API is a separate piece of work -- until then, pin.
     "mcp>=1.25.0,<2",
     "requests>=2.31.0",
-    "beautifulsoup4>=4.12.0"
+    "beautifulsoup4>=4.12.0",
+    # The emulator_* tools. Its datapack_emulator.agent results are a public
+    # contract kept stable within a major version, hence <1.
+    "datapack-emulator>=0.2.0,<1",
 ]
 
 [project.optional-dependencies]
-# The emulator_* tools. Becomes a required dependency once datapack-emulator
-# is on PyPI; until then: pip install -e ./datapack-emulator (the submodule).
-emulator = [
-    "datapack-emulator>=0.2.0",
-]
 dev = [
     "pytest>=8.0",
     "build>=1.0",
