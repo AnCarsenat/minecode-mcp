@@ -15,7 +15,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/minecode-mcp?logo=pypi&logoColor=white)](https://pypi.org/project/minecode-mcp/)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white)](https://python.org)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/License-GPL--3.0-blue)](LICENSE)
 [![Tests](https://github.com/AnCarsenat/minecode-mcp/actions/workflows/test.yml/badge.svg)](https://github.com/AnCarsenat/minecode-mcp/actions/workflows/test.yml)
 
 [![MseeP.ai Security Assessment](https://mseep.net/pr/ancarsenat-minecode-mcp-badge.png)](https://mseep.ai/app/ancarsenat-minecode-mcp)
@@ -804,7 +804,7 @@ Spyglass, misode, and the wiki are volunteer-run. MineCode caches aggressively �
 
 ## 📄 License
 
-MIT — see [LICENSE](LICENSE)
+GPL-3.0 — see [LICENSE](LICENSE)
 
 ---
 
