@@ -146,6 +146,16 @@ jobs:
                           "migration table did not load from the installed wheel")
                       print("migration detection works from the installed package")
 
+                      # datapack-emulator is a runtime dependency: the wheel
+                      # must pull it in, and emulator_run must work from it.
+                      result = await session.call_tool(
+                          "emulator_run",
+                          {"path": "example/crystal_dimension", "ticks": 5},
+                      )
+                      payload = json.loads(result.content[0].text)
+                      assert payload["success"] and payload["ok"], payload
+                      print("emulator_run:", payload["summary"])
+
           asyncio.run(main())
           PY
 

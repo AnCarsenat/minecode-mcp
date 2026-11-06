@@ -25,10 +25,9 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger("minecode.emulator")
 
 INSTALL_HINT = (
-    "Install it into the same Python as the minecode server. It is an optional "
-    "extra and not on PyPI yet: from a minecode-mcp checkout run "
-    "`git submodule update --init` then `pip install -e ./datapack-emulator` "
-    "(or `pip install git+https://github.com/AnCarsenat/Datapack-Emulator.git`)."
+    "datapack-emulator is a dependency of minecode-mcp: reinstall it into the "
+    "same Python as the minecode server with `pip install -U minecode-mcp` "
+    "(or `pip install -U datapack-emulator`). It needs version 0.2.0 or newer."
 )
 
 

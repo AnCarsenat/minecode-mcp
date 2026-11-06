@@ -375,7 +375,8 @@ Get the exact path with `python3 -c "import sys; print(sys.executable)"` **from 
 ### Datapack Emulator — run the pack without the game
 
 Backed by [Datapack Emulator](https://github.com/AnCarsenat/Datapack-Emulator)
-(a submodule at `datapack-emulator/`). It loads the pack as a server of the
+(installed with MineCode from PyPI; its source is a submodule at
+`datapack-emulator/`). It loads the pack as a server of the
 chosen version would, ticks it, and reports what happened. Results carry
 `ok` and a one-line `summary`; `ok` is false for the silent failures the game
 only warns about (functions that do not parse, `functions/` folders on 1.21+).
@@ -509,11 +510,13 @@ cd minecode-mcp
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -e ./datapack-emulator    # the emulator, from the submodule
+python -m pip install -e ./datapack-emulator    # optional: the emulator from the submodule, to change both
 python -m pip install -e ".[dev]"
 ```
 
 Already cloned without `--recurse-submodules`: `git submodule update --init`.
+Skipping the submodule is fine: `pip install -e ".[dev]"` installs the
+emulator from PyPI. Install the submodule first only to work on both at once.
 
 **Windows (PowerShell)**
 

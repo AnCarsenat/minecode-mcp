@@ -80,4 +80,4 @@ def test_missing_emulator_degrades_to_an_install_hint(monkeypatch):
 
     monkeypatch.setattr(emulator, "_agent", unavailable)
     r = emulator.handle_emulator_run(".")
-    assert r["success"] is False and "pip install -e ./datapack-emulator" in r["hint"]
+    assert r["success"] is False and "pip install -U minecode-mcp" in r["hint"]
