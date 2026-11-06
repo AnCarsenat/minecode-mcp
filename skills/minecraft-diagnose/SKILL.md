@@ -75,7 +75,7 @@ that mismatch is itself a frequent cause.
 - Advancement fired once and never revoked.
 - Load runs after/before tick depending on version (load first from 1.19.3).
 - Integer math: scoreboards are 32-bit ints, `/=` truncates toward −∞, no floats — scale with `execute store … scale`.
-- `@e` selectors include dead/item entities and players — add `type=` and tags.
+- `@e` selectors include items, projectiles, markers and players — add `type=` and tags.
 
 ## 4. Fix, then prove it
 

@@ -26,10 +26,12 @@ the only source.
 | 1.20–1.20.1 | 15 | | 1.21.11 | 94.1 |
 | 1.20.2 | 18 | | 26.1–26.1.2 | 101.1 |
 | 1.20.3–1.20.4 | 26 | | 26.2 | 107.1 |
+| | | | 26.3 | 121 |
 
 Resource pack formats are numbered separately. Confirm with
 `version_to_pack_format(version)` / `pack_format_to_version(n, kind)`.
-From 1.21.11 formats have a minor part (`94.1`).
+From 1.21.9 formats have a minor part (`88.0`, `94.1`); tools may report
+only the major number.
 
 ## The big cliffs
 
@@ -38,11 +40,11 @@ From 1.21.11 formats have a minor part (`94.1`).
 | **1.20.2** | macros (`$` lines, `function … {args}` / `with`), `supported_formats`, overlays, `random` | none on newer; using them below 1.20.2 fails to parse | `get_technical_changes(to_version="1.20.2", topic="function")` |
 | **1.20.5** | item NBT → **components** (`item[comp=…]`); recipe `result.item`→`result.id`; loot `set_nbt` removed; item predicates use `components`/`predicates`; attribute modifier fields lowercased, operations named (`add_value`, …); `execute if items`; inline predicates | braces NBT is a hard parse error; JSON files dropped | `topic="component"`, `spyglass_get_mcdoc_symbol` |
 | **1.21** | registry folders **singular** (`function/`, `tags/function/`, `loot_table/`, …); enchantments are data-driven (`enchantment/`); attribute modifiers use namespaced `id` instead of UUID | plural folders ignored **silently** | `check_pack_structure`, `emulator_check` |
-| **1.21.2** | attribute ids lose `generic.`/`player.`/… prefix; `food` split into `food` + `consumable`; `rotate` command | old ids unknown; food fields rejected | `spyglass_get_registries(registry="attribute")` |
+| **1.21.2** | attribute ids lose `generic.`/`player.`/… prefix; `food` split into `food` + `consumable`; `item_model` component; `rotate` command | old ids unknown; food fields rejected | `spyglass_get_registries(registry="attribute")` |
 | **1.21.4** | `custom_model_data` becomes an object (`{floats:[…], flags:[…], strings:[…], colors:[…]}`); item model definitions (`assets/<ns>/items/`) | integer value rejected | `topic="model"` |
 | **1.21.5** | text components in commands are **SNBT**, not JSON strings; `clickEvent`→`click_event`, `hoverEvent`→`hover_event` (inner fields renamed, e.g. `show_text` uses `value`); strict types; `tooltip_display` replaces per-component `show_in_tooltip`; `enchantments` drops `levels` wrapper; `test` command | text silently wrong or parse error | `get_technical_changes(from_version="1.21.4", to_version="1.21.5", topic="text")` |
 | **1.21.6** | dialogs (`dialog` command and registry), `waypoint`, `version` command | n/a below | `topic="dialog"` |
-| **1.21.9** | `pack.mcmeta` gains `min_format`/`max_format` | range ignored by new clients if only old fields | `topic="pack"` |
+| **1.21.9** | `pack.mcmeta`: `min_format`/`max_format` replace `supported_formats` (and `formats` in overlay entries); `pack_format` becomes optional | a pack declaring only the old fields is not read as supporting 1.21.9+; keep the old fields too if older versions must load it | `get_technical_changes(from_version="1.21.8", to_version="1.21.9", topic="pack")` |
 | **26.x** | yearly numbering (26.1, 26.2, 26.3); new commands (`swing` 26.1, `unpublish` 26.2, `compute`, `posteffect` 26.3) | — | `list_technical_change_versions`, `get_technical_changes` |
 
 ## Commands and execute features by first version
@@ -78,7 +80,7 @@ Confirm one with `get_command_usage(version, command)` or `validate_command`.
 
 | intent | before | after |
 | --- | --- | --- |
-| named item | `give @s stick{display:{Name:'{"text":"Wand"}'}}` (≤1.20.4) | `give @s stick[custom_name={"text":"Wand"}]` (1.20.5+; SNBT text from 1.21.5) |
+| named item | `give @s stick{display:{Name:'{"text":"Wand"}'}}` (≤1.20.4) → `give @s stick[custom_name='{"text":"Wand"}']` (1.20.5–1.21.4, JSON in a string) | `give @s stick[custom_name={text:"Wand"}]` (1.21.5+, SNBT) |
 | enchant | `{Enchantments:[{id:"sharpness",lvl:5}]}` (≤1.20.4) | `[enchantments={levels:{"minecraft:sharpness":5}}]` (1.20.5–1.21.4) → `[enchantments={"minecraft:sharpness":5}]` (1.21.5+) |
 | custom tag on item | `{MyTag:1b}` | `[custom_data={MyTag:1b}]` |
 | model | `{CustomModelData:3}` → `[custom_model_data=3]` (1.20.5–1.21.3) | `[custom_model_data={floats:[3f]}]` (1.21.4+) |
@@ -87,7 +89,7 @@ Confirm one with `get_command_usage(version, command)` or `validate_command`.
 | click a link | `"clickEvent":{"action":"open_url","value":"…"}` | `click_event:{action:"open_url",url:"…"}` (1.21.5+) |
 | function folder | `data/ns/functions/` (≤1.20.6) | `data/ns/function/` (1.21+) |
 | tick tag | `data/minecraft/tags/functions/tick.json` | `data/minecraft/tags/function/tick.json` (1.21+) |
-| version range | — | `supported_formats` (1.20.2+), `min_format`/`max_format` (1.21.9+) |
+| version range | — | `supported_formats` (1.20.2–1.21.8), `min_format`/`max_format` (1.21.9+) |
 
 Shapes in the right-hand column are the common form; fields inside
 components keep changing — fetch the mcdoc (`spyglass_get_mcdoc_symbol`) or a

@@ -52,7 +52,8 @@ list once before reviewing a pack; most bugs are one of these.
 13. **Recipe `result`**: `"item"` → `"id"` (1.20.5); bare-string result invalid. → `misode_get_preset_data(generator_type="recipe")`.
 14. **Loot `set_nbt`** removed (1.20.5) → `set_components` / `set_custom_data`.
 15. **Item predicates** `"nbt"` → `"components"` / `"predicates"` (1.20.5).
-16. **Missing `type`** on loot tables, missing `criteria` on advancements → file dropped.
+16. **Missing required fields** (e.g. `criteria` on advancements, `pools[].rolls`
+    on loot tables) → file dropped. → compare with `misode_get_preset_data`.
 17. **Copying vanilla JSON from another version.** Always fetch the preset for
     *the target* version: `misode_get_preset_data(version=target, …)`.
 
@@ -102,7 +103,8 @@ list once before reviewing a pack; most bugs are one of these.
 ## Multi-version packs
 
 35. **Single `pack_format` only** → "made for a different version" warning
-    elsewhere. Add `supported_formats` (1.20.2+) / `min_format`+`max_format` (1.21.9+).
+    elsewhere. Add `supported_formats` (1.20.2–1.21.8) / `min_format`+`max_format`
+    (1.21.9+, which drops `supported_formats`; keep both for a range spanning it).
 36. **Overlay ranges overlapping or leaving gaps** → some versions get both or
     neither file. → `emulator_matrix(declared=true, boundaries=true)`.
 37. **Testing only the newest version** of a range — always check both ends.

@@ -34,7 +34,7 @@ and tell the user when the request needs a workaround:
 | global state | `#name objective` fake-player scores, or `data … storage ns:state` |
 | reusable condition | predicate file → `execute if predicate` |
 | parameterised function | macros (`$` lines + `function ns:f {…}` / `with storage`) — 1.20.2+ |
-| custom item | vanilla item + components (`custom_data`, `item_model`, `custom_name`, …) — 1.20.5+; NBT before |
+| custom item | vanilla item + components (`custom_data`, `custom_name`, `item_model` from 1.21.2, …) — 1.20.5+; NBT before |
 | right-click detection | `consumable` component (1.21.2+) or `carrot_on_a_stick` + `used` stat; check the version |
 | custom crafting | recipe JSON (`result.id` from 1.20.5) |
 | custom drops | loot table override or item modifier |
@@ -109,7 +109,10 @@ Tell the user:
 ```
 
 - Range of versions: `"supported_formats": {"min_inclusive": A, "max_inclusive": B}`
-  (1.20.2+), and from 1.21.9 `"min_format"`/`"max_format"`. Overlays
-  (`"overlays": {"entries": [{"directory": "overlay_48", "formats": …}]}`) carry
+  (1.20.2–1.21.8). From 1.21.9, `"min_format"`/`"max_format"` replace
+  `supported_formats` (and `pack_format` becomes optional); a pack that must
+  also load on older versions keeps the old fields alongside. Overlays
+  (`"overlays": {"entries": [{"directory": "overlay_48", "formats": …}]}`, with
+  `min_format`/`max_format` instead of `formats` from 1.21.9) carry
   per-version files. Confirm the exact fields with
   `get_technical_changes(to_version=target, topic="pack")`.

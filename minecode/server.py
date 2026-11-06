@@ -183,9 +183,13 @@ _PROMPTS = [
 ]
 
 
+def _guide_prompt_name(topic: str) -> str:
+    return f"guide_{topic.replace('-', '_')}"
+
+
 def _guide_prompts() -> list[Prompt]:
     return [
-        Prompt(name=f"guide_{g['topic'].replace('-', '_')}",
+        Prompt(name=_guide_prompt_name(g["topic"]),
                description=g["description"], arguments=[])
         for g in guides.index()
     ]
@@ -199,7 +203,10 @@ async def list_prompts() -> list[Prompt]:
 @server.get_prompt()
 async def get_prompt(name: str, arguments: dict | None = None) -> GetPromptResult:
     if name.startswith("guide_"):
-        guide = guides.get(name.removeprefix("guide_").replace("_", "-"))
+        # match on the listed name, so a topic containing '_' still round-trips
+        topic = next((g["topic"] for g in guides.index()
+                      if _guide_prompt_name(g["topic"]) == name), None)
+        guide = guides.get(topic) if topic else None
         if guide is None:
             raise ValueError(f"Unknown prompt: {name}")
         return GetPromptResult(
