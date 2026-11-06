@@ -66,7 +66,8 @@ jobs:
           for required in \
             "minecode/preprompts/assistant_preprompt.txt" \
             "minecode/config/config.json" \
-            "minecode/knowledge/migrations.json"
+            "minecode/knowledge/migrations.json" \
+            "minecode/skills/minecraft-diagnose/SKILL.md"
           do
             if ! echo "$CONTENTS" | grep -q "$required"; then
               echo "::error::$required is missing from the wheel"

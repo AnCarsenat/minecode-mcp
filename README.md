@@ -372,6 +372,25 @@ Get the exact path with `python3 -c "import sys; print(sys.executable)"` **from 
 | `get_wiki_commands` | Command list |
 | `get_wiki_category` | Pages in a category |
 
+### Datapack Emulator — run the pack without the game
+
+Backed by [Datapack Emulator](https://github.com/AnCarsenat/Datapack-Emulator)
+(a submodule at `datapack-emulator/`). It loads the pack as a server of the
+chosen version would, ticks it, and reports what happened. Results carry
+`ok` and a one-line `summary`; `ok` is false for the silent failures the game
+only warns about (functions that do not parse, `functions/` folders on 1.21+).
+
+| Tool | Description |
+|------|-------------|
+| `emulator_check` | Static: every function/tag the version refuses, ignored folders, unknown ids, missing functions |
+| `emulator_run` | Load + N ticks, then console `commands`; errors, chat, final scores/storage, call graph, estimated cost |
+| `emulator_test` | Assertions: `"20:"` + `score #g ns.t = 20`, `@e[tag=boss] = 1`, `block … = …` |
+| `emulator_matrix` | One fresh world per version across a range; what breaks where |
+| `emulator_explain` | Does this command (and each `execute` feature) exist in this version, and since when |
+
+Not modelled: physics, mob AI, redstone, gameplay-triggered advancements.
+See the [`datapack-emulator` skill](skills/datapack-emulator/SKILL.md).
+
 ### Other
 
 | Tool | Description |
@@ -485,22 +504,26 @@ Then add tests to `tests/test_knowledge.py` — **one for detection and one for 
 **Linux / macOS**
 
 ```bash
-git clone https://github.com/AnCarsenat/minecode-mcp.git
+git clone --recurse-submodules https://github.com/AnCarsenat/minecode-mcp.git
 cd minecode-mcp
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install --upgrade pip
+python -m pip install -e ./datapack-emulator    # the emulator, from the submodule
 python -m pip install -e ".[dev]"
 ```
+
+Already cloned without `--recurse-submodules`: `git submodule update --init`.
 
 **Windows (PowerShell)**
 
 ```powershell
-git clone https://github.com/AnCarsenat/minecode-mcp.git
+git clone --recurse-submodules https://github.com/AnCarsenat/minecode-mcp.git
 cd minecode-mcp
 py -m venv venv
 .\venv\Scripts\Activate.ps1
 py -m pip install --upgrade pip
+py -m pip install -e .\datapack-emulator
 py -m pip install -e ".[dev]"
 ```
 

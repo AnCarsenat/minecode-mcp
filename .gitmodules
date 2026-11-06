@@ -1,0 +1,3 @@
+[submodule "datapack-emulator"]
+	path = datapack-emulator
+	url = https://github.com/AnCarsenat/Datapack-Emulator.git

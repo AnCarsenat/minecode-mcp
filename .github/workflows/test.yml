@@ -22,6 +22,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # the datapack-emulator submodule, for the emulator_* tool tests
+          submodules: true
 
       - uses: actions/setup-python@v5
         with:
@@ -30,6 +33,7 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
+          python -m pip install -e ./datapack-emulator
           python -m pip install -e ".[dev]"
 
       - name: Run offline tests
@@ -84,7 +88,8 @@ jobs:
           for required in \
             "minecode/preprompts/assistant_preprompt.txt" \
             "minecode/config/config.json" \
-            "minecode/knowledge/migrations.json"
+            "minecode/knowledge/migrations.json" \
+            "minecode/skills/minecraft-diagnose/SKILL.md"
           do
             if ! echo "$CONTENTS" | grep -q "$required"; then
               echo "::error::$required is missing from the wheel"
