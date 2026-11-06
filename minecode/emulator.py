@@ -25,9 +25,10 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger("minecode.emulator")
 
 INSTALL_HINT = (
-    "Install it into the same Python as the minecode server: "
-    "pip install datapack-emulator  (it is a dependency of minecode-mcp, so "
-    "`pip install -U minecode-mcp` also fixes this)."
+    "Install it into the same Python as the minecode server. It is an optional "
+    "extra and not on PyPI yet: from a minecode-mcp checkout run "
+    "`git submodule update --init` then `pip install -e ./datapack-emulator` "
+    "(or `pip install git+https://github.com/AnCarsenat/Datapack-Emulator.git`)."
 )
 
 
@@ -107,7 +108,8 @@ def handle_emulator_matrix(path: Optional[str] = None, versions: Optional[List[s
                            download_client_jars: bool = False) -> dict:
     return _call("emulator_matrix", "matrix", packs=_path(path), versions=versions,
                  start=_version(from_version), end=_version(to_version),
-                 boundaries=boundaries, ticks=ticks, tests=list(tests or []),
+                 # exact versions are run as given; boundaries only thins ranges
+                 boundaries=boundaries and not versions, ticks=ticks, tests=list(tests or []),
                  download=download_client_jars)
 
 

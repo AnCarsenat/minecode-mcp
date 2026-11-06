@@ -655,7 +655,7 @@ TOOLS = [
         description=(
             "ASSERT a datapack's behaviour: run tests in a fresh emulated world and "
             "report pass/fail per test. A test is 'TICK:COMMAND' (runs after that "
-            "tick; the command may be empty, e.g. '20:') or an object {command, "
+            "tick; the command may be empty when `checks` are given, e.g. '20:') or an object {command, "
             "at_tick, expect, expect_value, checks}. Check lines: 'score #g ns.t = "
             "5', 'score @p ns.pts >= 1', 'storage ns:s path = 1b', "
             "'@e[type=zombie,tag=ns.boss] = 1', 'block 0 64 0 = minecraft:stone', "
@@ -696,7 +696,7 @@ TOOLS = [
                 "versions": {"type": "array", "items": {"type": "string"}, "description": "Exact versions to run."},
                 "from_version": {"type": "string", "description": "Range start (inclusive)."},
                 "to_version": {"type": "string", "description": "Range end (inclusive)."},
-                "boundaries": {"type": "boolean", "description": "Keep only the first release of each pack format (default true)."},
+                "boundaries": {"type": "boolean", "description": "Keep only the first release of each pack format in the declared or from/to range (default true; ignored with explicit `versions`)."},
                 "ticks": {"type": "integer", "description": "Ticks per version (default 20)."},
                 "tests": {"type": "array", "items": {"type": ["string", "object"]}, "description": "Tests to run in every version (same format as emulator_test)."},
                 "download_client_jars": {"type": "boolean", "description": "Fetch each version's client.jar (large; default false)."},

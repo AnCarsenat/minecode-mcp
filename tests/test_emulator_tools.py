@@ -61,6 +61,12 @@ def test_check_and_matrix_and_explain(pack):
     assert e["success"] and e["ok"] is False
 
 
+def test_matrix_runs_exact_versions_as_given(pack):
+    # 1.21 and 1.21.1 share a pack format; boundaries must not drop one of them
+    m = emulator.handle_emulator_matrix(str(pack), versions=["1.21", "1.21.1"], ticks=1)
+    assert m["success"] and [row["version"] for row in m["results"]] == ["1.21", "1.21.1"]
+
+
 def test_bad_input_is_a_failure_not_an_exception(tmp_path):
     r = emulator.handle_emulator_run(str(tmp_path / "missing"))
     assert r["success"] is False and "no such" in r["error"]
@@ -74,4 +80,4 @@ def test_missing_emulator_degrades_to_an_install_hint(monkeypatch):
 
     monkeypatch.setattr(emulator, "_agent", unavailable)
     r = emulator.handle_emulator_run(".")
-    assert r["success"] is False and "pip install datapack-emulator" in r["hint"]
+    assert r["success"] is False and "pip install -e ./datapack-emulator" in r["hint"]
