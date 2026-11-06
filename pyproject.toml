@@ -13,7 +13,7 @@ name = "minecode-mcp"
 version = "0.2.2"
 description = "MCP Server for Minecraft datapack development with wiki, Spyglass, Misode, and Mojira integrations"
 readme = "README.md"
-license = "MIT"
+license = "GPL-3.0-only"
 authors = [
     { name = "AnCarsenat" }
 ]
@@ -21,7 +21,6 @@ keywords = ["minecraft", "mcp", "datapack", "copilot", "ai"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

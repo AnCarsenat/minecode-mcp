@@ -4,5 +4,6 @@
   "author": { "name": "AnCarsenat" },
   "homepage": "https://github.com/AnCarsenat/minecode-mcp",
   "repository": "https://github.com/AnCarsenat/minecode-mcp",
+  "license": "GPL-3.0-only",
   "keywords": ["minecraft", "datapack", "mcfunction", "mcp"]
 }
