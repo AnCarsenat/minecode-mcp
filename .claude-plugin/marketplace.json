@@ -1,0 +1,11 @@
+{
+  "name": "minecode",
+  "owner": { "name": "AnCarsenat" },
+  "plugins": [
+    {
+      "name": "minecode",
+      "source": "./",
+      "description": "MineCode MCP server plus skills for Minecraft Java datapack development."
+    }
+  ]
+}

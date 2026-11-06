@@ -67,9 +67,16 @@ artifacts = [
     "minecode/knowledge/*.json",
 ]
 
+# The guides (skills/<name>/SKILL.md) live at the repository root so Claude
+# Code can load the repository as a plugin; the wheel carries them inside the
+# package, where minecode/guides.py looks first.
+[tool.hatch.build.targets.wheel.force-include]
+"skills" = "minecode/skills"
+
 [tool.hatch.build.targets.sdist]
 include = [
     "minecode/",
+    "skills/",
     "tests/",
     "README.md",
     "LICENSE",

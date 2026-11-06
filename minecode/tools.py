@@ -621,6 +621,26 @@ TOOLS = [
     ),
 
     Tool(
+        name="get_minecode_guide",
+        description=(
+            "Get a step-by-step guide for Minecraft datapack work, written for AI "
+            "agents: 'minecraft-feature-workflow' (implementing a feature), "
+            "'minecraft-diagnose' (something does not work), "
+            "'minecraft-recurring-issues' (checklist of common mistakes), "
+            "'minecraft-version-differences' (what changed in which version), "
+            "'minecode-mcp' (which of these tools to use when), "
+            "'datapack-emulator' (running and testing a pack). Call with no topic "
+            "to list them. Read the relevant one BEFORE starting the task."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "topic": {"type": "string", "description": "Guide name, e.g. 'minecraft-diagnose'. Omit to list all guides."},
+            },
+            "required": [],
+        },
+    ),
+    Tool(
         name="cache_status",
         description=(
             "Inspect or clear MineCode's on-disk response cache. Version-pinned "
@@ -674,6 +694,7 @@ HANDLERS = {
     "search_mojira": handlers.handle_search_mojira,
 
     "get_logs": handlers.handle_get_logs,
+    "get_minecode_guide": handlers.handle_get_minecode_guide,
     "cache_status": handlers.handle_cache_status,
 }
 

@@ -1,0 +1,8 @@
+{
+  "name": "minecode",
+  "description": "Minecraft Java datapack development: version-exact syntax lookups (Spyglass, Misode, Brigadier), version migration checks, log reading, datapack emulation, and skills for implementing features, diagnosing issues and handling per-version differences.",
+  "author": { "name": "AnCarsenat" },
+  "homepage": "https://github.com/AnCarsenat/minecode-mcp",
+  "repository": "https://github.com/AnCarsenat/minecode-mcp",
+  "keywords": ["minecraft", "datapack", "mcfunction", "mcp"]
+}
