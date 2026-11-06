@@ -59,3 +59,18 @@ def test_guides_are_prompts_and_resources():
 def test_start_session_points_at_the_guides(tmp_path):
     result = handlers.handle_minecraft_start_session(str(tmp_path))
     assert any(g["topic"] == "minecraft-diagnose" for g in result["guides"])
+
+
+def test_server_reports_its_own_version_and_instructions():
+    import minecode
+
+    options = server.server.create_initialization_options()
+    assert options.server_version == minecode.__version__
+    assert "minecraft_start_session" in options.instructions
+    assert "get_minecode_guide" in options.instructions
+    # every tool the instructions name exists
+    from minecode.tools import HANDLERS
+    for name in ("minecraft_start_session", "get_minecode_guide", "get_command_usage",
+                 "validate_command", "check_version_syntax", "misode_get_preset_data",
+                 "emulator_check", "emulator_run", "emulator_test"):
+        assert name in HANDLERS and name in options.instructions

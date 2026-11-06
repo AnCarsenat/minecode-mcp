@@ -5,21 +5,22 @@ MCP server for Minecraft datapack development.
 This module is wiring only -- transport, dispatch, prompts, resources. Tool
 schemas live in tools.py and behaviour lives in handlers.py.
 
-On preprompt delivery: an MCP server cannot inject a system prompt into the
-client. There is no such mechanism in the protocol. The previous version loaded
-assistant_preprompt.txt into `server.default_preprompt` and defined
-`get_preprompt_messages()`, but nothing ever called either, so the guidance
-never reached the model -- which is why agents kept writing version-wrong
-syntax despite the guidance existing.
+On getting guidance to the model. An earlier version loaded
+assistant_preprompt.txt into a variable nothing read, so the guidance never
+reached the model. The protocol offers four real channels, and this server
+uses all four:
 
-The protocol offers three real channels, and this server uses all three:
+  1. Server instructions -- returned in the initialize result; clients such as
+     Claude Code place them in the model's system prompt. Short, because they
+     cost context in every conversation. This is the only channel that reaches
+     the model before it picks its first tool.
+  2. A TOOL    -- minecraft_start_session / get_minecode_guide, in tools.py.
+     Agents call tools on their own.
+  3. Prompts   -- user-invoked, appear as slash commands in the client
+  4. Resources -- client-attachable context
 
-  1. Prompts   -- user-invoked, appears as a slash command in the client
-  2. Resources -- client-attachable context
-  3. A TOOL    -- minecraft_start_session, in tools.py
-
-The tool matters most. Agents call tools autonomously; they do not
-autonomously invoke prompts or attach resources.
+An agent given only (2)-(4) was observed fixing a pack without ever calling
+minecraft_start_session or reading a guide; (1) exists for that reason.
 """
 
 from __future__ import annotations
@@ -41,13 +42,34 @@ from mcp.types import (
     Tool,
 )
 
-from . import guides
+from . import __version__, guides
 from .tools import HANDLERS, TOOLS
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 logger = logging.getLogger("minecode.server")
 
-server = Server("minecode-server")
+#: Sent to the client at initialize. Kept short: it is paid for in every
+#: conversation, and its only job is to route the agent to the tools that
+#: carry the detail (start session, guides, verification).
+INSTRUCTIONS = """\
+MineCode: Minecraft Java datapack and resource pack tools. Your memory of \
+Minecraft syntax is likely wrong for the target version (item components \
+1.20.5, singular folders 1.21, attribute ids 1.21.2, SNBT text 1.21.5).
+1. Before reading or writing any pack file, call minecraft_start_session with \
+the pack folder: it returns the target version and the changes that apply.
+2. Before implementing a feature call get_minecode_guide("minecraft-feature-workflow"); \
+before debugging, get_minecode_guide("minecraft-diagnose").
+3. Look syntax up (get_command_usage, spyglass_*, misode_get_preset_data) \
+instead of recalling it; check it with validate_command and check_version_syntax.
+4. Prove it works with emulator_check, emulator_run and emulator_test before \
+saying a pack is done."""
+
+server = Server(
+    "minecode-server",
+    version=__version__,
+    instructions=INSTRUCTIONS,
+    website_url="https://github.com/AnCarsenat/minecode-mcp",
+)
 
 _PKG_DIR = Path(__file__).resolve().parent
 _CONFIG_FILE = _PKG_DIR / "config" / "config.json"

@@ -405,6 +405,7 @@ See the [`datapack-emulator` skill](skills/datapack-emulator/SKILL.md).
 
 | Kind | Name | Description |
 |------|------|-------------|
+| Instructions | (sent at initialize) | A short routing note clients place in the model's system prompt: start session first, read the guide, verify with the emulator |
 | Prompt | `minecraft_datapack_session` | Loads the development methodology |
 | Resource | `minecode://preprompt` | Same methodology, attachable as context |
 | Resource | `minecode://migrations` | The curated migration table as JSON |
