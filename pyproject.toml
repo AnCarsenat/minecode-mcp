@@ -40,6 +40,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# The emulator_* tools. Becomes a required dependency once datapack-emulator
+# is on PyPI; until then: pip install -e ./datapack-emulator (the submodule).
+emulator = [
+    "datapack-emulator>=0.2.0",
+]
 dev = [
     "pytest>=8.0",
     "build>=1.0",

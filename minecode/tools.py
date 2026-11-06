@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from mcp.types import Tool
 
-from . import handlers
+from . import emulator, handlers
 
 # Reused so the warning is worded identically everywhere. Divergent phrasings
 # of the same caveat read as different caveats.
@@ -595,6 +595,134 @@ TOOLS = [
     ),
 
     # -----------------------------------------------------------------------
+    # Datapack Emulator -- run the pack without the game
+    # -----------------------------------------------------------------------
+    Tool(
+        name="emulator_check",
+        description=(
+            "Static check of a WHOLE datapack for one version (or several): every "
+            "function and tag the version refuses to load (with the line), folders "
+            "spelled for other versions (functions/ on 1.21+, which the game ignores "
+            "silently), unknown ids, bad SNBT, calls to missing functions, broken "
+            "loot tables, predicates and advancements. Nothing runs; fast. Use after "
+            "writing files and as the first step of any diagnosis. Result: `ok` and "
+            "`summary`, then `results[].problems[]` with code/resource/line/message."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "Folder holding pack.mcmeta. Defaults to the current directory."},
+                "version": {"type": "string", "description": "Target version, e.g. '1.21.4'. Omit to use the one pack.mcmeta points at."},
+                "versions": {"type": "array", "items": {"type": "string"}, "description": "Several versions instead of one."},
+                "declared": {"type": "boolean", "description": "Check the first release of every pack format pack.mcmeta declares (default false)."},
+                "severity": {"type": "string", "enum": ["error", "warning", "info"], "description": "Lowest severity returned (default info)."},
+                "download_client_jar": {"type": "boolean", "description": "Fetch the version's client.jar from Mojang (~30 MB, cached) to check ids and JSON fields against the real game (default false: uses one if installed)."},
+            },
+            "required": [],
+        },
+    ),
+    Tool(
+        name="emulator_run",
+        description=(
+            "RUN a datapack without the game: loads it as a server of the given "
+            "version would, runs #minecraft:load and N ticks of #minecraft:tick, "
+            "then optional console `commands` to inspect the world. Returns errors, "
+            "chat, functions that failed to load, ignored folders, final scores / "
+            "storage / entity counts, call graph (missing / never-called functions, "
+            "recursion) and an ESTIMATED cost per function. `ok` is false for the "
+            "silent failures the real game only warns about. Use to verify a "
+            "change, reproduce a bug, or answer 'what does this pack do'. Not "
+            "modelled: physics, mob AI, redstone, gameplay advancement triggers."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "Folder holding pack.mcmeta. Defaults to the current directory."},
+                "version": {"type": "string", "description": "Version to emulate. Omit to use pack.mcmeta's."},
+                "ticks": {"type": "integer", "description": "Ticks to run after load (default 20 = one second)."},
+                "commands": {"type": "array", "items": {"type": "string"}, "description": "Console commands run after the ticks, as the server, e.g. 'scoreboard players get #game ns.timer', 'data get storage ns:state'. Each answer is returned with its output."},
+                "players": {"type": "integer", "description": "Fake players Player1..N in the world (default 1)."},
+                "level": {"type": "string", "enum": ["debug", "info", "warning", "error"], "description": "Lowest record level returned (default info)."},
+                "max_records": {"type": "integer", "description": "Cap on records returned, errors kept first (default 100)."},
+                "entities": {"type": "boolean", "description": "Include every entity's full NBT and placed blocks (large; default false)."},
+                "download_client_jar": {"type": "boolean", "description": "Fetch the version's client.jar from Mojang for real ids and messages (default false)."},
+            },
+            "required": [],
+        },
+    ),
+    Tool(
+        name="emulator_test",
+        description=(
+            "ASSERT a datapack's behaviour: run tests in a fresh emulated world and "
+            "report pass/fail per test. A test is 'TICK:COMMAND' (runs after that "
+            "tick; the command may be empty, e.g. '20:') or an object {command, "
+            "at_tick, expect, expect_value, checks}. Check lines: 'score #g ns.t = "
+            "5', 'score @p ns.pts >= 1', 'storage ns:s path = 1b', "
+            "'@e[type=zombie,tag=ns.boss] = 1', 'block 0 64 0 = minecraft:stone', "
+            "'if entity @a[tag=ns.won]'. Use to prove a feature works and to pin a "
+            "bug before fixing it."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "tests": {"type": "array", "items": {"type": ["string", "object"]}, "description": "Tests: 'TICK:COMMAND' strings or {command, at_tick, expect, expect_value, checks} objects."},
+                "path": {"type": "string", "description": "Folder holding pack.mcmeta. Defaults to the current directory."},
+                "version": {"type": "string", "description": "Version to test in. Omit to use pack.mcmeta's."},
+                "versions": {"type": "array", "items": {"type": "string"}, "description": "Run the tests in several versions instead."},
+                "checks": {"type": "array", "items": {"type": "string"}, "description": "With exactly one test: what must hold after it runs."},
+                "expect": {"type": "string", "description": "With exactly one test: text its output must contain."},
+                "expect_value": {"type": "string", "description": "With exactly one test: range its result must be in: '5', '1..', '..3', '1..4'."},
+                "ticks": {"type": "integer", "description": "Ticks to run (default: one past the last test)."},
+                "players": {"type": "integer", "description": "Fake players (default 1)."},
+                "download_client_jar": {"type": "boolean", "description": "Fetch the client.jar from Mojang (default false)."},
+            },
+            "required": ["tests"],
+        },
+    ),
+    Tool(
+        name="emulator_matrix",
+        description=(
+            "Run a datapack in MANY versions, one fresh world each, one row per "
+            "version: status, unknown commands, features missing in that version, "
+            "functions that failed to load, active overlays, errors. Without a "
+            "selection: the range pack.mcmeta declares; boundaries=true (default) "
+            "keeps the first release of each pack format. Use for multi-version "
+            "packs and when porting between versions."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "Folder holding pack.mcmeta. Defaults to the current directory."},
+                "versions": {"type": "array", "items": {"type": "string"}, "description": "Exact versions to run."},
+                "from_version": {"type": "string", "description": "Range start (inclusive)."},
+                "to_version": {"type": "string", "description": "Range end (inclusive)."},
+                "boundaries": {"type": "boolean", "description": "Keep only the first release of each pack format (default true)."},
+                "ticks": {"type": "integer", "description": "Ticks per version (default 20)."},
+                "tests": {"type": "array", "items": {"type": ["string", "object"]}, "description": "Tests to run in every version (same format as emulator_test)."},
+                "download_client_jars": {"type": "boolean", "description": "Fetch each version's client.jar (large; default false)."},
+            },
+            "required": [],
+        },
+    ),
+    Tool(
+        name="emulator_explain",
+        description=(
+            "Does this one command exist in this version, and which of its features "
+            "(execute subcommands, conditions, return forms) arrived in which "
+            "version? Offline and instant. Complements validate_command (grammar) "
+            "with 'added in X' answers."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "command": {"type": "string", "description": "The command, with or without '/'."},
+                "version": {"type": "string", "description": "Version to check against. Omit for the latest."},
+                "path": {"type": "string", "description": "Optional pack folder, to default the version from its pack.mcmeta."},
+            },
+            "required": ["command"],
+        },
+    ),
+    # -----------------------------------------------------------------------
     # Logs and maintenance
     # -----------------------------------------------------------------------
     Tool(
@@ -695,6 +823,11 @@ HANDLERS = {
 
     "get_logs": handlers.handle_get_logs,
     "get_minecode_guide": handlers.handle_get_minecode_guide,
+    "emulator_check": emulator.handle_emulator_check,
+    "emulator_run": emulator.handle_emulator_run,
+    "emulator_test": emulator.handle_emulator_test,
+    "emulator_matrix": emulator.handle_emulator_matrix,
+    "emulator_explain": emulator.handle_emulator_explain,
     "cache_status": handlers.handle_cache_status,
 }
 
