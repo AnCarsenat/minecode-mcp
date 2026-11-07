@@ -132,21 +132,34 @@ def _game_dirs() -> List[Path]:
     dirs = [Path.cwd(), minecraft_logs.get_default_minecraft_dir(),
             minecraft_logs.get_tlauncher_dir()]
     prism = minecraft_logs.get_prism_launcher_dir() / "instances"
-    if prism.is_dir():
-        for instance in prism.iterdir():
-            dirs += [instance / "minecraft", instance / ".minecraft"]
-    return dirs
+    try:
+        for instance in sorted(prism.iterdir()):
+            if instance.is_dir():  # skip instgroups.json and the like
+                dirs += [instance / "minecraft", instance / ".minecraft"]
+    except OSError:  # no Prism, or unreadable
+        pass
+    return list(dict.fromkeys(dirs))  # the default launcher and TLauncher can coincide
 
 
 def find_perf_reports(extra: Optional[str] = None) -> List[Path]:
-    """Every /perf zip found, newest first."""
-    roots = ([Path(extra).expanduser()] if extra else []) + _game_dirs()
-    found = {}
-    for root in roots:
-        for folder in (root / "debug" / "profiling", root):
-            if folder.is_dir():
-                for zip_path in folder.glob("*.zip"):
-                    found[zip_path.resolve()] = zip_path.stat().st_mtime
+    """Every /perf zip found, newest first.
+
+    Only <root>/debug/profiling/*.zip is searched in the game folders (never
+    recursively); the zips directly in ``extra`` count too, because the user
+    pointed at that folder -- a workspace's release zips in the current folder
+    must not be mistaken for reports."""
+    folders: List[Path] = []
+    if extra:
+        root = Path(extra).expanduser()
+        folders += [root / "debug" / "profiling", root]
+    folders += [root / "debug" / "profiling" for root in _game_dirs()]
+    found: Dict[Path, float] = {}
+    for folder in folders:
+        try:
+            for zip_path in folder.glob("*.zip"):
+                found[zip_path.resolve()] = zip_path.stat().st_mtime
+        except OSError:  # missing, unreadable, or a dangling link
+            continue
     return sorted(found, key=lambda p: -found[p])
 
 
@@ -175,7 +188,8 @@ def handle_emulator_server_profile(report: Optional[str] = None,
                          "`/perf start`, wait 10 seconds, then call this again. The report "
                          "lands in <game or server folder>/debug/profiling/. Pass "
                          "report=<zip> or search_dir=<folder> if it is elsewhere."),
-                "searched": [str(d) for d in _game_dirs()],
+                "searched": ([search_dir] if search_dir else [])
+                            + [str(d / "debug" / "profiling") for d in _game_dirs()],
             }
         chosen = reports[0]
     try:

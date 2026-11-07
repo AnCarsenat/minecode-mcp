@@ -118,3 +118,13 @@ def test_server_profile_without_a_report_says_how_to_make_one(tmp_path, monkeypa
     monkeypatch.setattr(emulator, "_game_dirs", lambda: [tmp_path])
     r = emulator.handle_emulator_server_profile()
     assert r["success"] is False and "/perf start" in r["hint"]
+
+
+def test_find_perf_reports_ignores_stray_zips_and_missing_folders(tmp_path, monkeypatch):
+    (tmp_path / "my-pack-v1.zip").write_bytes(b"not a report")  # a workspace release zip
+    monkeypatch.setattr(emulator, "_game_dirs", lambda: [tmp_path, tmp_path / "missing"])
+    assert emulator.find_perf_reports() == []
+    report = _report(tmp_path)
+    assert emulator.find_perf_reports() == [report.resolve()]
+    # a folder the user points at explicitly may hold the zips directly
+    assert (tmp_path / "my-pack-v1.zip").resolve() in emulator.find_perf_reports(str(tmp_path))
