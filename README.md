@@ -388,6 +388,7 @@ only warns about (functions that do not parse, `functions/` folders on 1.21+).
 | `emulator_test` | Assertions: `"20:"` + `score #g ns.t = 20`, `@e[tag=boss] = 1`, `block … = …` |
 | `emulator_matrix` | One fresh world per version across a range; what breaks where |
 | `emulator_explain` | Does this command (and each `execute` feature) exist in this version, and since when |
+| `emulator_server_profile` | Real timings: reads the report `/perf start` writes (found automatically in the game folders), per function and line; with the pack, beside the emulator's estimate |
 
 Not modelled: physics, mob AI, redstone, gameplay-triggered advancements.
 See the [`datapack-emulator` skill](skills/datapack-emulator/SKILL.md).

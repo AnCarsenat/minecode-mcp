@@ -722,6 +722,33 @@ TOOLS = [
             "required": ["command"],
         },
     ),
+    Tool(
+        name="emulator_server_profile",
+        description=(
+            "REAL timings from a Minecraft server or singleplayer world: reads the "
+            "report `/perf start` writes after 10 seconds (debug/profiling/*.zip) and "
+            "returns every function's measured ms per tick and its dearest lines. "
+            "Use when the user reports lag or asks what their pack costs. Without "
+            "`report`, the newest report in the game folders (default launcher, Prism, "
+            "the current folder) is used; if there is none, ask the user to run "
+            "`/perf start` in game and wait 10 s. With `path` (the pack), the "
+            "emulator's estimate and the measured/estimated ratio are added per "
+            "function. emulator_run's profile is a warm-loop lower bound; this is the "
+            "real number."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "report": {"type": "string", "description": "A /perf zip (or its profiling.txt, or a folder holding them). Omit to use the newest one found."},
+                "path": {"type": "string", "description": "Optional pack folder (holding pack.mcmeta) to compare the estimate with."},
+                "version": {"type": "string", "description": "Version to emulate for the comparison. Defaults to the report's."},
+                "ticks": {"type": "integer", "description": "Ticks emulated for the comparison (default 200)."},
+                "players": {"type": "integer", "description": "Fake players emulated for the comparison (default 1)."},
+                "search_dir": {"type": "string", "description": "Extra folder to search for reports (a server folder or a game folder)."},
+            },
+            "required": [],
+        },
+    ),
     # -----------------------------------------------------------------------
     # Logs and maintenance
     # -----------------------------------------------------------------------
@@ -828,6 +855,7 @@ HANDLERS = {
     "emulator_test": emulator.handle_emulator_test,
     "emulator_matrix": emulator.handle_emulator_matrix,
     "emulator_explain": emulator.handle_emulator_explain,
+    "emulator_server_profile": emulator.handle_emulator_server_profile,
     "cache_status": handlers.handle_cache_status,
 }
 

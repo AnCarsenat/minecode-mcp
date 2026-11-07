@@ -20,6 +20,7 @@ through unchanged and documented in its docs/agents.md; `success` here means
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("minecode.emulator")
@@ -27,7 +28,7 @@ logger = logging.getLogger("minecode.emulator")
 INSTALL_HINT = (
     "datapack-emulator is a dependency of minecode-mcp: reinstall it into the "
     "same Python as the minecode server with `pip install -U minecode-mcp` "
-    "(or `pip install -U datapack-emulator`). It needs version 0.2.0 or newer."
+    "(or `pip install -U datapack-emulator`). It needs version 0.3.0 or newer."
 )
 
 
@@ -116,3 +117,93 @@ def handle_emulator_explain(command: str, version: Optional[str] = None,
                             path: Optional[str] = None) -> dict:
     return _call("emulator_explain", "explain", packs=path or None, command=command,
                  version=_version(version))
+
+
+# ---------------------------------------------------------------------------
+# Real timings: a server's /perf report
+# ---------------------------------------------------------------------------
+
+def _game_dirs() -> List[Path]:
+    """Where a /perf report can be: the current folder (a server), the
+    default launcher's game folder, every Prism instance (singleplayer writes
+    to <game dir>/debug/profiling/)."""
+    from .scrappers import minecraft_logs
+
+    dirs = [Path.cwd(), minecraft_logs.get_default_minecraft_dir(),
+            minecraft_logs.get_tlauncher_dir()]
+    prism = minecraft_logs.get_prism_launcher_dir() / "instances"
+    try:
+        for instance in sorted(prism.iterdir()):
+            if instance.is_dir():  # skip instgroups.json and the like
+                dirs += [instance / "minecraft", instance / ".minecraft"]
+    except OSError:  # no Prism, or unreadable
+        pass
+    return list(dict.fromkeys(dirs))  # the default launcher and TLauncher can coincide
+
+
+def find_perf_reports(extra: Optional[str] = None) -> List[Path]:
+    """Every /perf zip found, newest first.
+
+    Only <root>/debug/profiling/*.zip is searched in the game folders (never
+    recursively); the zips directly in ``extra`` count too, because the user
+    pointed at that folder -- a workspace's release zips in the current folder
+    must not be mistaken for reports."""
+    folders: List[Path] = []
+    if extra:
+        root = Path(extra).expanduser()
+        folders += [root / "debug" / "profiling", root]
+    folders += [root / "debug" / "profiling" for root in _game_dirs()]
+    found: Dict[Path, float] = {}
+    for folder in folders:
+        try:
+            for zip_path in folder.glob("*.zip"):
+                found[zip_path.resolve()] = zip_path.stat().st_mtime
+        except OSError:  # missing, unreadable, or a dangling link
+            continue
+    return sorted(found, key=lambda p: -found[p])
+
+
+def handle_emulator_server_profile(report: Optional[str] = None,
+                                   path: Optional[str] = None,
+                                   version: Optional[str] = None,
+                                   ticks: int = 200, players: int = 1,
+                                   search_dir: Optional[str] = None) -> dict:
+    """Read a real /perf report; with a pack path, compare with the estimate."""
+    if report:
+        chosen = Path(report).expanduser()
+        if chosen.is_dir():
+            reports = find_perf_reports(str(chosen))
+            if not reports:
+                return {"success": False, "tool": "emulator_server_profile",
+                        "error": f"no /perf report (*.zip) in {chosen} or its debug/profiling/"}
+            chosen = reports[0]
+    else:
+        reports = find_perf_reports(search_dir)
+        if not reports:
+            return {
+                "success": False,
+                "tool": "emulator_server_profile",
+                "error": "no /perf report found",
+                "hint": ("In Minecraft (singleplayer or on the server console) run "
+                         "`/perf start`, wait 10 seconds, then call this again. The report "
+                         "lands in <game or server folder>/debug/profiling/. Pass "
+                         "report=<zip> or search_dir=<folder> if it is elsewhere."),
+                "searched": ([search_dir] if search_dir else [])
+                            + [str(d / "debug" / "profiling") for d in _game_dirs()],
+            }
+        chosen = reports[0]
+    try:
+        agent = _agent()
+    except _Unavailable as exc:
+        return {"success": False, "tool": "emulator_server_profile",
+                "error": f"datapack-emulator is not available: {exc}", "hint": INSTALL_HINT}
+    if not hasattr(agent, "server_profile"):
+        return {"success": False, "tool": "emulator_server_profile",
+                "error": "this datapack-emulator is too old for server profiles (needs 0.3.0)",
+                "hint": "pip install -U 'datapack-emulator>=0.3.0'"}
+    result = _call("emulator_server_profile", "server_profile", report=str(chosen),
+                   packs=path or None, version=_version(version), ticks=ticks,
+                   players=players)
+    if result.get("success"):
+        result["report"] = str(chosen)
+    return result

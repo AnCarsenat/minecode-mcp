@@ -95,7 +95,10 @@ list once before reviewing a pack; most bugs are one of these.
 ## Performance
 
 32. **Heavy work in `#tick`** — gate with a cheap `execute if`, or move to a
-    20t scheduled loop. → `emulator_run` → `profile.functions`, `dearest_lines`.
+    20t scheduled loop. → `emulator_server_profile` on a `/perf start` report
+    (real); `emulator_run` → `profile.functions`, `dearest_lines` (estimate).
+    Measured on 26.2: an `nbt=` selector costs ~1.4 µs per entity it checks,
+    `data … entity` ~3 µs, scoreboard and storage under 1 µs.
 33. **Recursion without a depth limit** (raycasts) → hits `maxCommandChainLength`
     and stops silently. → `emulator_run` → `call_graph.recursion`.
 34. **`@e[…,distance=..N]` without `type`** scans every entity in loaded chunks.

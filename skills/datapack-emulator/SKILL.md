@@ -15,8 +15,8 @@ run, no Minecraft install. It closes the loop **write → run → read → fix**
 
 | you have | call |
 | --- | --- |
-| MineCode MCP tools | `emulator_check`, `emulator_run`, `emulator_test`, `emulator_matrix`, `emulator_explain` |
-| Python | `from datapack_emulator import agent` → `agent.check/run/test/matrix/explain` |
+| MineCode MCP tools | `emulator_check`, `emulator_run`, `emulator_test`, `emulator_matrix`, `emulator_explain`, `emulator_server_profile` |
+| Python | `from datapack_emulator import agent` → `agent.check/run/test/matrix/explain/server_profile` |
 | a shell | `datapack-emulator-cli --quiet run|test|matrix PACK --version V --json` |
 
 `PACK` is the folder that holds `pack.mcmeta` (or several, in load order).
@@ -46,9 +46,28 @@ Always pass the version the pack targets.
   bug in the pack; `app` = context.
 - `call_graph.never_called`: functions nothing reaches — usually a missing
   tag entry or typo in a `function` call.
-- `profile` is an **estimate from a cost model** — use it to rank functions,
-  never as real milliseconds.
+- `profile` comes from a cost model **measured on a real server**, but in
+  warm loops: a lower bound and a ranking (what is dearest, how a change
+  moves it), not real milliseconds — a line run once per tick can cost
+  10–50× more on a real server. For real numbers: `emulator_server_profile`.
 - Lists are capped (`max_records`); `truncated: true` and `*_total` say so.
+
+## Real timings (`emulator_server_profile`)
+
+When the user reports lag, or asks what their pack really costs:
+
+1. ask them to run `/perf start` in game (singleplayer works) or on the server
+   console, and wait 10 seconds — the server writes
+   `debug/profiling/<date>-<world>-<version>.zip`;
+2. `emulator_server_profile()` finds the newest report in the game folders
+   (or pass `report=` / `search_dir=`), and returns `mspt` (the whole tick),
+   `datapack_ms_per_tick`, and per function `ms_per_tick` with its dearest
+   `lines[]` (`us_each`, `runs_per_tick`; lines from 1.20.3);
+3. with `path=` the pack is emulated too: `compared.functions[]` has the
+   estimate and `ratio` per function — a function whose ratio is far above
+   the others does something the model misses.
+
+Fix the dearest function first; check the fix with a new `/perf` report.
 
 ## Asking the world (`run` → `commands`)
 

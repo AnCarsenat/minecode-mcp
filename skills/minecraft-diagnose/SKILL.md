@@ -24,7 +24,7 @@ that mismatch is itself a frequent cause.
 | JSON file (recipe, loot, advancement, predicate) ignored | schema error → file dropped on load | logs, `emulator_check`, compare with `misode_get_preset_data` |
 | runs but wrong result | logic: selector, context (`@s`, position), execution order, score math | `emulator_run` with `commands=[…]` to inspect state; `emulator_test` to pin it |
 | runs once then stops | re-arming: advancement not revoked, schedule not re-scheduled, tag not removed | read the trigger path |
-| lag | per-tick work, `@e` without filters, unbounded recursion | `emulator_run` → `profile`, `call_graph.recursion` |
+| lag | per-tick work, `@e` without filters, `nbt=` scans, entity NBT reads, unbounded recursion | ask for a `/perf start` report → `emulator_server_profile` (real ms per function and line); `emulator_run` → `profile`, `call_graph.recursion` |
 | "pack made for a different version" | pack_format / range mismatch | `detect_pack_version`, `version_to_pack_format` |
 
 ## 2. Gather evidence
