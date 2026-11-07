@@ -600,13 +600,19 @@ TOOLS = [
     Tool(
         name="emulator_check",
         description=(
-            "Static check of a WHOLE datapack for one version (or several): every "
-            "function and tag the version refuses to load (with the line), folders "
-            "spelled for other versions (functions/ on 1.21+, which the game ignores "
-            "silently), unknown ids, bad SNBT, calls to missing functions, broken "
-            "loot tables, predicates and advancements. Nothing runs; fast. Use after "
-            "writing files and as the first step of any diagnosis. Result: `ok` and "
-            "`summary`, then `results[].problems[]` with code/resource/line/message."
+            "Static check of a WHOLE datapack for one version (or several). Severities, "
+            "worst first: FATAL = the world or the pack will not load at all (a "
+            "worldgen/dimension/enchantment file that does not parse, lacks a required "
+            "field or uses a removed kind; an unreadable pack.mcmeta) -- listed in "
+            "`load_blockers`, fix these FIRST; then errors: functions and tags the "
+            "version refuses (with the line), folders spelled for other versions "
+            "(functions/ on 1.21+), unknown ids, broken loot tables, predicates, "
+            "recipes, advancements; then warnings and notes. Nothing runs; fast. Use "
+            "after writing files and as the first step of any diagnosis. With "
+            "real_server=true the pack is also loaded on a real dedicated server of "
+            "the version (Java, ~10 s, jar downloaded once) and its log is reported "
+            "under results[].server -- exact, for anything the static check might "
+            "miss; it needs the user's acceptance of the Minecraft EULA."
         ),
         inputSchema={
             "type": "object",
@@ -615,8 +621,10 @@ TOOLS = [
                 "version": {"type": "string", "description": "Target version, e.g. '1.21.4'. Omit to use the one pack.mcmeta points at."},
                 "versions": {"type": "array", "items": {"type": "string"}, "description": "Several versions instead of one."},
                 "declared": {"type": "boolean", "description": "Check the first release of every pack format pack.mcmeta declares (default false)."},
-                "severity": {"type": "string", "enum": ["error", "warning", "info"], "description": "Lowest severity returned (default info)."},
+                "severity": {"type": "string", "enum": ["fatal", "error", "warning", "info"], "description": "Lowest severity returned (default info). 'fatal' returns only what stops loading."},
                 "download_client_jar": {"type": "boolean", "description": "Fetch the version's client.jar from Mojang (~30 MB, cached) to check ids and JSON fields against the real game (default false: uses one if installed)."},
+                "real_server": {"type": "boolean", "description": "Also load the pack on a real vanilla dedicated server and report its log (default false). Requires Java and user_accepted_minecraft_eula."},
+                "user_accepted_minecraft_eula": {"type": "boolean", "description": "Set true ONLY after the user explicitly said they accept the Minecraft EULA (https://aka.ms/MinecraftEULA). Never assume it."},
             },
             "required": [],
         },

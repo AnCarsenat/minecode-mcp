@@ -12,7 +12,7 @@ name = "minecode-mcp"
 # so a forgotten bump fails loudly instead of shipping a mislabelled release.
 # PyPI version numbers are permanent -- a published version can never be
 # replaced, only superseded. See "Releasing" in README.md.
-version = "0.4.0"
+version = "0.5.0"
 description = "MCP Server for Minecraft datapack development with wiki, Spyglass, Misode, and Mojira integrations"
 readme = "README.md"
 license = "GPL-3.0-only"
@@ -40,7 +40,7 @@ dependencies = [
     "beautifulsoup4>=4.12.0",
     # The emulator_* tools. Its datapack_emulator.agent results are a public
     # contract kept stable within a major version, hence <1.
-    "datapack-emulator>=0.3.0,<1",
+    "datapack-emulator>=0.4.0,<1",
 ]
 
 [project.optional-dependencies]

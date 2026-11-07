@@ -47,6 +47,18 @@ list once before reviewing a pack; most bugs are one of these.
 12. **Encoding**: BOM at file start, smart quotes from copy-paste, CRLF in
     macro lines. → save UTF-8 without BOM.
 
+## The world will not load (fatal)
+
+43. **A world registry file the version rejects.** Worldgen, dimension,
+    dimension type, enchantment, damage type, variants… are loaded all or
+    nothing when the world starts: one bad element and the server stops with
+    "Failed to load datapacks, can't proceed with server load" — for every
+    pack. Typical after a version upgrade: a newly required field
+    (`dimension_type.has_ender_dragon_fight` in 26.2, `noise_router` fields),
+    a removed feature type (`minecraft:random_patch` in 26.2).
+    → `emulator_check` → `load_blockers`; `real_server=true` for the server's
+    exact verdict (needs the user's EULA consent).
+
 ## JSON resources ignored
 
 13. **Recipe `result`**: `"item"` → `"id"` (1.20.5); bare-string result invalid. → `misode_get_preset_data(generator_type="recipe")`.
