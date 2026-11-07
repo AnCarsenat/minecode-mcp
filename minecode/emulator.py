@@ -75,10 +75,32 @@ def _path(path: Optional[str]) -> str:
 
 def handle_emulator_check(path: Optional[str] = None, version: Optional[str] = None,
                           versions: Optional[List[str]] = None, declared: bool = False,
-                          severity: str = "info", download_client_jar: bool = False) -> dict:
-    return _call("emulator_check", "check", packs=_path(path), version=_version(version),
-                 versions=versions, declared=declared, boundaries=declared and not versions,
-                 severity=severity, download=download_client_jar)
+                          severity: str = "info", download_client_jar: bool = False,
+                          real_server: bool = False,
+                          user_accepted_minecraft_eula: bool = False) -> dict:
+    kwargs: Dict[str, Any] = dict(
+        packs=_path(path), version=_version(version), versions=versions, declared=declared,
+        boundaries=declared and not versions, severity=severity,
+        download=download_client_jar,
+    )
+    if real_server:
+        if not user_accepted_minecraft_eula:
+            return {
+                "success": False, "tool": "emulator_check",
+                "error": "real_server=true runs a Minecraft server, which means accepting "
+                         "the Minecraft EULA (https://aka.ms/MinecraftEULA)",
+                "hint": "Ask the user whether they accept the Minecraft EULA. Only if they "
+                        "say yes, call again with user_accepted_minecraft_eula=true.",
+            }
+        kwargs.update(server=True, accept_eula=True)
+    result = _call("emulator_check", "check", **kwargs)
+    if result.get("success") and result.get("load_blockers"):
+        # put what stops the world loading where an agent reads first
+        result["first"] = (
+            "FATAL: fix load_blockers before anything else -- the server will not load "
+            "the world (or the pack) at all while they remain"
+        )
+    return result
 
 
 def handle_emulator_run(path: Optional[str] = None, version: Optional[str] = None,

@@ -128,3 +128,21 @@ def test_find_perf_reports_ignores_stray_zips_and_missing_folders(tmp_path, monk
     assert emulator.find_perf_reports() == [report.resolve()]
     # a folder the user points at explicitly may hold the zips directly
     assert (tmp_path / "my-pack-v1.zip").resolve() in emulator.find_perf_reports(str(tmp_path))
+
+
+def test_check_puts_load_blockers_first(tmp_path):
+    root = tmp_path / "fatal"
+    (root / "data/t/worldgen/biome").mkdir(parents=True)
+    (root / "pack.mcmeta").write_text('{"pack": {"pack_format": 61, "description": ""}}')
+    (root / "data/t/worldgen/biome/bad.json").write_text("{not json")
+    r = emulator.handle_emulator_check(str(root), "1.21.4")
+    if "load_blockers" not in r:
+        pytest.skip("datapack-emulator without fatal problems")
+    assert r["success"] and r["ok"] is False and r["load_blockers"]
+    assert r["first"].startswith("FATAL")
+
+
+def test_real_server_needs_the_users_eula_consent(tmp_path):
+    r = emulator.handle_emulator_check(str(tmp_path), "26.2", real_server=True)
+    assert r["success"] is False and "EULA" in r["error"]
+    assert "Ask the user" in r["hint"]

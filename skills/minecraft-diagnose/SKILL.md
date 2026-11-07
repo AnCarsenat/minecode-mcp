@@ -14,10 +14,24 @@ the classes below the problem is in.
 actually **plays** on — it is often not the one `pack.mcmeta` claims, and
 that mismatch is itself a frequent cause.
 
-## 1. Classify the symptom
+## 1. Rule out a world that does not load at all
+
+Run `emulator_check(path, version)` first and read `load_blockers`. A
+**fatal** problem — a worldgen, dimension, dimension type or enchantment
+file that does not parse, lacks a field the version requires or uses a
+removed kind, or an unreadable `pack.mcmeta` — makes the server refuse the
+*whole world* ("Failed to load datapacks, can't proceed with server load"),
+for every pack. Nothing else matters until those are fixed. If the static
+check is clean but the user says the world will not start, ask whether they
+accept the Minecraft EULA; if they do, `emulator_check(...,
+real_server=true, user_accepted_minecraft_eula=true)` loads the pack on a
+real server and reports exactly what it refused.
+
+## 2. Classify the symptom
 
 | symptom | most likely class | first move |
 | --- | --- | --- |
+| the world will not load / "Failed to load datapacks" | a fatal world-registry problem | `emulator_check` → `load_blockers`; then `real_server=true` (with the user's EULA consent) |
 | nothing happens, no error anywhere | not loaded (folders, tags, namespace, pack disabled) | `check_pack_structure`, `emulator_run` → `ignored_folders`, `failed_functions` |
 | "Unknown or incomplete command" / function missing from `/function` tab-complete | function failed to parse (whole file dropped) | `get_logs(filter="errors")`, `emulator_check`, `validate_command` per line |
 | works on old version, broken on new | syntax migration | `get_technical_changes(from_version=old, to_version=new)` |
@@ -27,7 +41,7 @@ that mismatch is itself a frequent cause.
 | lag | per-tick work, `@e` without filters, `nbt=` scans, entity NBT reads, unbounded recursion | ask for a `/perf start` report → `emulator_server_profile` (real ms per function and line); `emulator_run` → `profile`, `call_graph.recursion` |
 | "pack made for a different version" | pack_format / range mismatch | `detect_pack_version`, `version_to_pack_format` |
 
-## 2. Gather evidence
+## 3. Gather evidence
 
 1. **Logs**: `get_logs(filter="errors")`. Look for `Failed to load function`,
    `Couldn't load tag`, `Couldn't parse element`, `Failed to parse`. The line
@@ -51,7 +65,7 @@ that mismatch is itself a frequent cause.
 6. **Known bug?** `search_mojira(query)` before a long session; check each
    issue's affected versions.
 
-## 3. Common root causes, by class
+## 4. Common root causes, by class
 
 **Not loaded**
 - Folder spelling wrong for the version (1.21 rename) — incl. `tags/function(s)`.
@@ -77,7 +91,7 @@ that mismatch is itself a frequent cause.
 - Integer math: scoreboards are 32-bit ints, `/=` truncates toward −∞, no floats — scale with `execute store … scale`.
 - `@e` selectors include items, projectiles, markers and players — add `type=` and tags.
 
-## 4. Fix, then prove it
+## 5. Fix, then prove it
 
 1. Fix the cause, not the symptom. Explain the cause to the user first.
 2. Re-run the same evidence: `emulator_check`, `emulator_run`; turn the bug

@@ -26,13 +26,17 @@ Always pass the version the pack targets.
 
 | goal | call | read |
 | --- | --- | --- |
-| will it load? (cheap, first) | `check(path, version)` | `ok`, `results[].problems[]` (`code`, `resource`, `line`, `message`) |
+| will it load? (cheap, first) | `check(path, version)` | `load_blockers` FIRST (fatal: the world/pack will not load), then `ok`, `results[].problems[]` (`severity`, `code`, `resource`, `line`, `message`) |
+| what exactly does a real server refuse? | `check(path, version, real_server=true, user_accepted_minecraft_eula=true)` | `results[].server` (`started`, `problems`, `log`) — only with the user's explicit EULA consent |
 | does it run, what does it do? | `run(path, version, ticks=40, commands=[…])` | `summary`, `ignored_folders`, `failed_functions`, error `records`, `chat`, `world.scores`, `commands[].output` |
 | does it do the *right* thing? | `test(path, tests=[…], checks=[…])` | `ok`, `results[].status`/`reason` |
 | does it work across the range? | `matrix(path, declared=true, boundaries=true)` | `results[]` per version: `status`, `unknown_commands`, `failed_functions` |
 | is this one line valid in V? | `explain(command, version)` | `exists`, `missing_features[].since` |
 
 ## Reading results
+
+- Severities, worst first: **fatal** (the world or the pack will not load
+  at all — fix these before anything else), error, warning, info.
 
 - Read `summary` first. Then `ok`.
 - `run.ok` is **false** for the silent failures the real game only warns
