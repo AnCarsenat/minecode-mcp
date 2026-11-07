@@ -81,3 +81,40 @@ def test_missing_emulator_degrades_to_an_install_hint(monkeypatch):
     monkeypatch.setattr(emulator, "_agent", unavailable)
     r = emulator.handle_emulator_run(".")
     assert r["success"] is False and "pip install -U minecode-mcp" in r["hint"]
+
+
+def _report(tmp_path, name="2026-11-06_21_34_37-world-26_2.zip"):
+    import zipfile
+    from pathlib import Path
+
+    folder = tmp_path / "debug" / "profiling"
+    folder.mkdir(parents=True)
+    report = folder / name
+    text = (Path(__file__).parent / "data" / "profiling-26.2.txt").read_text()
+    with zipfile.ZipFile(report, "w") as archive:
+        archive.writestr("server/profiling.txt", text)
+    return report
+
+
+def test_server_profile_reads_a_report(tmp_path):
+    report = _report(tmp_path)
+    r = emulator.handle_emulator_server_profile(str(report))
+    if not r["success"] and "too old" in r.get("error", ""):
+        pytest.skip("datapack-emulator < 0.3.0")
+    assert r["success"] and r["measured"] and r["report"] == str(report)
+    assert r["functions"][0]["function"] == "probe:sb"
+
+
+def test_server_profile_finds_the_newest_report(tmp_path, monkeypatch):
+    _report(tmp_path)
+    monkeypatch.setattr(emulator, "_game_dirs", lambda: [tmp_path])
+    r = emulator.handle_emulator_server_profile()
+    if not r["success"] and "too old" in r.get("error", ""):
+        pytest.skip("datapack-emulator < 0.3.0")
+    assert r["success"] and r["report"].endswith(".zip")
+
+
+def test_server_profile_without_a_report_says_how_to_make_one(tmp_path, monkeypatch):
+    monkeypatch.setattr(emulator, "_game_dirs", lambda: [tmp_path])
+    r = emulator.handle_emulator_server_profile()
+    assert r["success"] is False and "/perf start" in r["hint"]

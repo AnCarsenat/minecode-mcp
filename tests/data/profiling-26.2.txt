@@ -1,0 +1,246 @@
+---- Minecraft Profiler Results ----
+// I'm working as hard as I can!
+
+Version: 26.2
+Time span: 10011 ms
+Tick span: 201 ticks
+// This is approximately 20.08 ticks per second. It should be 20 ticks per second
+
+--- BEGIN PROFILE DUMP ---
+
+[00] nextTickWait(201/1) - 96.98%/96.98%
+[00] tick(201/1) - 2.98%/2.98%
+[01] |   commandFunctions(201/1) - 79.59%/2.37%
+[02] |   |   minecraft:tick(201/1) - 99.41%/2.35%
+[03] |   |   |   function probe:sb(201/1) - 65.15%/1.53%
+[04] |   |   |   |   unspecified(201/1) - 54.64%/0.84%
+[04] |   |   |   |   execute scoreboard players add #x p 1(402000/2000) - 45.36%/0.70%
+[03] |   |   |   function probe:data(201/1) - 32.49%/0.76%
+[04] |   |   |   |   execute data modify storage probe:s v set value 1(100500/500) - 65.80%/0.50%
+[04] |   |   |   |   unspecified(201/1) - 34.20%/0.26%
+[03] |   |   |   unspecified(201/1) - 1.95%/0.05%
+[03] |   |   |   function probe:empty(201/1) - 0.41%/0.01%
+[02] |   |   unspecified(201/1) - 0.59%/0.01%
+[01] |   levels(201/1) - 17.27%/0.51%
+[02] |   |   ServerLevel[world] minecraft:overworld(201/1) - 56.69%/0.29%
+[03] |   |   |   tick(201/1) - 99.20%/0.29%
+[04] |   |   |   |   chunkSource(201/1) - 52.01%/0.15%
+[05] |   |   |   |   |   chunks(201/1) - 71.90%/0.11%
+[06] |   |   |   |   |   |   pollingChunks(201/1) - 88.58%/0.10%
+[07] |   |   |   |   |   |   |   tickingChunks(201/1) - 91.62%/0.09%
+[08] |   |   |   |   |   |   |   |   naturalSpawnCount(201/1) - 38.60%/0.03%
+[08] |   |   |   |   |   |   |   |   customSpawners(201/1) - 20.84%/0.02%
+[08] |   |   |   |   |   |   |   |   tickTickingChunks(201/1) - 15.37%/0.01%
+[08] |   |   |   |   |   |   |   |   filteringSpawningChunks(201/1) - 10.52%/0.01%
+[08] |   |   |   |   |   |   |   |   tickSpawningChunks(201/1) - 6.88%/0.01%
+[08] |   |   |   |   |   |   |   |   unspecified(201/1) - 5.13%/0.00%
+[08] |   |   |   |   |   |   |   |   shuffleSpawningChunks(201/1) - 2.67%/0.00%
+[07] |   |   |   |   |   |   |   broadcast(201/1) - 4.73%/0.00%
+[07] |   |   |   |   |   |   |   unspecified(201/1) - 3.64%/0.00%
+[06] |   |   |   |   |   |   unspecified(201/1) - 11.42%/0.01%
+[05] |   |   |   |   |   unload(201/1) - 16.72%/0.03%
+[06] |   |   |   |   |   |   chunk_unload(201/1) - 45.97%/0.01%
+[06] |   |   |   |   |   |   poi(201/1) - 39.86%/0.01%
+[06] |   |   |   |   |   |   unspecified(201/1) - 14.17%/0.00%
+[05] |   |   |   |   |   purge(201/1) - 7.77%/0.01%
+[05] |   |   |   |   |   unspecified(201/1) - 3.61%/0.01%
+[04] |   |   |   |   unspecified(201/1) - 21.42%/0.06%
+[04] |   |   |   |   tickPending(201/1) - 10.89%/0.03%
+[05] |   |   |   |   |   blockTicks(201/1) - 69.26%/0.02%
+[06] |   |   |   |   |   |   collect(201/1) - 53.78%/0.01%
+[07] |   |   |   |   |   |   |   #containersToTick 0/0
+[06] |   |   |   |   |   |   unspecified(201/1) - 18.73%/0.00%
+[06] |   |   |   |   |   |   run(201/1) - 14.35%/0.00%
+[07] |   |   |   |   |   |   |   #ticksToRun 0/0
+[06] |   |   |   |   |   |   cleanup(201/1) - 13.14%/0.00%
+[05] |   |   |   |   |   fluidTicks(201/1) - 22.80%/0.01%
+[06] |   |   |   |   |   |   collect(201/1) - 35.15%/0.00%
+[07] |   |   |   |   |   |   |   #containersToTick 0/0
+[06] |   |   |   |   |   |   unspecified(201/1) - 34.26%/0.00%
+[06] |   |   |   |   |   |   run(201/1) - 22.65%/0.00%
+[07] |   |   |   |   |   |   |   #ticksToRun 0/0
+[06] |   |   |   |   |   |   cleanup(201/1) - 7.94%/0.00%
+[05] |   |   |   |   |   unspecified(201/1) - 7.94%/0.00%
+[04] |   |   |   |   blockEvents(201/1) - 3.14%/0.01%
+[04] |   |   |   |   weather(201/1) - 3.10%/0.01%
+[04] |   |   |   |   debugSynchronizers(201/1) - 2.30%/0.01%
+[04] |   |   |   |   scheduledFunctions(201/1) - 1.71%/0.00%
+[04] |   |   |   |   raid(201/1) - 1.66%/0.00%
+[04] |   |   |   |   entityManagement(201/1) - 1.14%/0.00%
+[04] |   |   |   |   entities(201/1) - 1.14%/0.00%
+[04] |   |   |   |   world border(201/1) - 0.85%/0.00%
+[04] |   |   |   |   blockEntities(201/1) - 0.64%/0.00%
+[03] |   |   |   unspecified(201/1) - 0.80%/0.00%
+[02] |   |   ServerLevel[world] minecraft:the_end(201/1) - 17.01%/0.09%
+[03] |   |   |   tick(201/1) - 98.25%/0.09%
+[04] |   |   |   |   chunkSource(201/1) - 42.86%/0.04%
+[05] |   |   |   |   |   chunks(201/1) - 69.40%/0.03%
+[06] |   |   |   |   |   |   pollingChunks(201/1) - 83.55%/0.02%
+[07] |   |   |   |   |   |   |   tickingChunks(201/1) - 74.85%/0.02%
+[08] |   |   |   |   |   |   |   |   naturalSpawnCount(201/1) - 32.40%/0.01%
+[08] |   |   |   |   |   |   |   |   unspecified(201/1) - 25.34%/0.00%
+[08] |   |   |   |   |   |   |   |   tickTickingChunks(201/1) - 14.95%/0.00%
+[08] |   |   |   |   |   |   |   |   filteringSpawningChunks(201/1) - 9.00%/0.00%
+[08] |   |   |   |   |   |   |   |   customSpawners(201/1) - 6.37%/0.00%
+[08] |   |   |   |   |   |   |   |   tickSpawningChunks(201/1) - 6.34%/0.00%
+[08] |   |   |   |   |   |   |   |   shuffleSpawningChunks(201/1) - 5.60%/0.00%
+[07] |   |   |   |   |   |   |   unspecified(201/1) - 22.16%/0.00%
+[07] |   |   |   |   |   |   |   broadcast(201/1) - 2.98%/0.00%
+[06] |   |   |   |   |   |   unspecified(201/1) - 16.45%/0.00%
+[05] |   |   |   |   |   unload(201/1) - 17.34%/0.01%
+[06] |   |   |   |   |   |   chunk_unload(201/1) - 36.25%/0.00%
+[06] |   |   |   |   |   |   unspecified(201/1) - 33.36%/0.00%
+[06] |   |   |   |   |   |   poi(201/1) - 30.39%/0.00%
+[05] |   |   |   |   |   purge(201/1) - 7.04%/0.00%
+[05] |   |   |   |   |   unspecified(201/1) - 6.22%/0.00%
+[04] |   |   |   |   entities(201/1) - 23.02%/0.02%
+[05] |   |   |   |   |   dragonFight(201/1) - 88.11%/0.02%
+[05] |   |   |   |   |   unspecified(201/1) - 11.89%/0.00%
+[04] |   |   |   |   tickPending(201/1) - 13.28%/0.01%
+[05] |   |   |   |   |   blockTicks(201/1) - 45.84%/0.01%
+[06] |   |   |   |   |   |   collect(201/1) - 40.43%/0.00%
+[07] |   |   |   |   |   |   |   #containersToTick 0/0
+[06] |   |   |   |   |   |   unspecified(201/1) - 28.88%/0.00%
+[06] |   |   |   |   |   |   run(201/1) - 20.56%/0.00%
+[07] |   |   |   |   |   |   |   #ticksToRun 0/0
+[06] |   |   |   |   |   |   cleanup(201/1) - 10.13%/0.00%
+[05] |   |   |   |   |   fluidTicks(201/1) - 41.94%/0.00%
+[06] |   |   |   |   |   |   collect(201/1) - 42.06%/0.00%
+[07] |   |   |   |   |   |   |   #containersToTick 0/0
+[06] |   |   |   |   |   |   unspecified(201/1) - 29.54%/0.00%
+[06] |   |   |   |   |   |   run(201/1) - 21.91%/0.00%
+[07] |   |   |   |   |   |   |   #ticksToRun 0/0
+[06] |   |   |   |   |   |   cleanup(201/1) - 6.49%/0.00%
+[05] |   |   |   |   |   unspecified(201/1) - 12.21%/0.00%
+[04] |   |   |   |   unspecified(201/1) - 10.80%/0.01%
+[04] |   |   |   |   blockEvents(201/1) - 1.99%/0.00%
+[04] |   |   |   |   raid(201/1) - 1.75%/0.00%
+[04] |   |   |   |   weather(201/1) - 1.44%/0.00%
+[04] |   |   |   |   world border(201/1) - 1.34%/0.00%
+[04] |   |   |   |   entityManagement(201/1) - 1.23%/0.00%
+[04] |   |   |   |   debugSynchronizers(201/1) - 1.14%/0.00%
+[04] |   |   |   |   blockEntities(201/1) - 1.14%/0.00%
+[03] |   |   |   unspecified(201/1) - 1.75%/0.00%
+[02] |   |   ServerLevel[world] minecraft:the_nether(201/1) - 16.73%/0.09%
+[03] |   |   |   tick(201/1) - 98.08%/0.08%
+[04] |   |   |   |   chunkSource(201/1) - 52.22%/0.04%
+[05] |   |   |   |   |   chunks(201/1) - 68.85%/0.03%
+[06] |   |   |   |   |   |   pollingChunks(201/1) - 84.04%/0.03%
+[07] |   |   |   |   |   |   |   tickingChunks(201/1) - 86.97%/0.02%
+[08] |   |   |   |   |   |   |   |   naturalSpawnCount(201/1) - 37.24%/0.01%
+[08] |   |   |   |   |   |   |   |   unspecified(201/1) - 21.08%/0.00%
+[08] |   |   |   |   |   |   |   |   tickTickingChunks(201/1) - 14.14%/0.00%
+[08] |   |   |   |   |   |   |   |   filteringSpawningChunks(201/1) - 10.20%/0.00%
+[08] |   |   |   |   |   |   |   |   customSpawners(201/1) - 8.55%/0.00%
+[08] |   |   |   |   |   |   |   |   tickSpawningChunks(201/1) - 5.65%/0.00%
+[08] |   |   |   |   |   |   |   |   shuffleSpawningChunks(201/1) - 3.15%/0.00%
+[07] |   |   |   |   |   |   |   unspecified(201/1) - 8.69%/0.00%
+[07] |   |   |   |   |   |   |   broadcast(201/1) - 4.35%/0.00%
+[06] |   |   |   |   |   |   unspecified(201/1) - 15.96%/0.00%
+[05] |   |   |   |   |   unload(201/1) - 17.37%/0.01%
+[06] |   |   |   |   |   |   chunk_unload(201/1) - 39.38%/0.00%
+[06] |   |   |   |   |   |   poi(201/1) - 33.32%/0.00%
+[06] |   |   |   |   |   |   unspecified(201/1) - 27.30%/0.00%
+[05] |   |   |   |   |   purge(201/1) - 7.24%/0.00%
+[05] |   |   |   |   |   unspecified(201/1) - 6.54%/0.00%
+[04] |   |   |   |   tickPending(201/1) - 17.49%/0.01%
+[05] |   |   |   |   |   blockTicks(201/1) - 46.64%/0.01%
+[06] |   |   |   |   |   |   collect(201/1) - 42.73%/0.00%
+[07] |   |   |   |   |   |   |   #containersToTick 0/0
+[06] |   |   |   |   |   |   unspecified(201/1) - 27.53%/0.00%
+[06] |   |   |   |   |   |   run(201/1) - 18.67%/0.00%
+[07] |   |   |   |   |   |   |   #ticksToRun 0/0
+[06] |   |   |   |   |   |   cleanup(201/1) - 11.08%/0.00%
+[05] |   |   |   |   |   fluidTicks(201/1) - 42.29%/0.01%
+[06] |   |   |   |   |   |   unspecified(201/1) - 46.08%/0.00%
+[06] |   |   |   |   |   |   collect(201/1) - 28.30%/0.00%
+[07] |   |   |   |   |   |   |   #containersToTick 0/0
+[06] |   |   |   |   |   |   run(201/1) - 20.75%/0.00%
+[07] |   |   |   |   |   |   |   #ticksToRun 0/0
+[06] |   |   |   |   |   |   cleanup(201/1) - 4.86%/0.00%
+[05] |   |   |   |   |   unspecified(201/1) - 11.07%/0.00%
+[04] |   |   |   |   unspecified(201/1) - 16.10%/0.01%
+[04] |   |   |   |   blockEvents(201/1) - 2.52%/0.00%
+[04] |   |   |   |   world border(201/1) - 2.17%/0.00%
+[04] |   |   |   |   weather(201/1) - 2.13%/0.00%
+[04] |   |   |   |   raid(201/1) - 1.68%/0.00%
+[04] |   |   |   |   entities(201/1) - 1.55%/0.00%
+[04] |   |   |   |   debugSynchronizers(201/1) - 1.41%/0.00%
+[04] |   |   |   |   blockEntities(201/1) - 1.41%/0.00%
+[04] |   |   |   |   entityManagement(201/1) - 1.32%/0.00%
+[03] |   |   |   unspecified(201/1) - 1.92%/0.00%
+[02] |   |   unspecified(201/1) - 9.57%/0.05%
+[01] |   unspecified(201/1) - 1.58%/0.05%
+[01] |   clocks(201/1) - 0.58%/0.02%
+[01] |   connection(201/1) - 0.34%/0.01%
+[01] |   debugSubscribers(201/1) - 0.22%/0.01%
+[01] |   scheduledPacketProcessing(201/1) - 0.11%/0.00%
+[01] |   tallying(201/1) - 0.10%/0.00%
+[01] |   gameTests(201/1) - 0.08%/0.00%
+[01] |   players(201/1) - 0.06%/0.00%
+[01] |   server gui refresh(201/1) - 0.03%/0.00%
+[01] |   send chunks(201/1) - 0.02%/0.00%
+[01] |   timeSync(10/0) - 0.02%/0.00%
+[02] |   |   timeSync(10/0) - 80.39%/0.00%
+[02] |   |   unspecified(10/0) - 19.61%/0.00%
+[00] unspecified(201/1) - 0.04%/0.04%
+--- END PROFILE DUMP ---
+
+--- BEGIN COUNTER DUMP ---
+
+-- Counter: containersToTick --
+[00] root total:0/0 average: 0/0
+[01] |   tick total:0/0 average: 0/0
+[02] |   |   levels total:0/0 average: 0/0
+[03] |   |   |   ServerLevel[world] minecraft:the_nether total:0/0 average: 0/0
+[04] |   |   |   |   tick total:0/0 average: 0/0
+[05] |   |   |   |   |   tickPending total:0/0 average: 0/0
+[06] |   |   |   |   |   |   fluidTicks total:0/0 average: 0/0
+[07] |   |   |   |   |   |   |   collect total:0/0 average: 0/0
+[06] |   |   |   |   |   |   blockTicks total:0/0 average: 0/0
+[07] |   |   |   |   |   |   |   collect total:0/0 average: 0/0
+[03] |   |   |   ServerLevel[world] minecraft:overworld total:0/0 average: 0/0
+[04] |   |   |   |   tick total:0/0 average: 0/0
+[05] |   |   |   |   |   tickPending total:0/0 average: 0/0
+[06] |   |   |   |   |   |   fluidTicks total:0/0 average: 0/0
+[07] |   |   |   |   |   |   |   collect total:0/0 average: 0/0
+[06] |   |   |   |   |   |   blockTicks total:0/0 average: 0/0
+[07] |   |   |   |   |   |   |   collect total:0/0 average: 0/0
+[03] |   |   |   ServerLevel[world] minecraft:the_end total:0/0 average: 0/0
+[04] |   |   |   |   tick total:0/0 average: 0/0
+[05] |   |   |   |   |   tickPending total:0/0 average: 0/0
+[06] |   |   |   |   |   |   fluidTicks total:0/0 average: 0/0
+[07] |   |   |   |   |   |   |   collect total:0/0 average: 0/0
+[06] |   |   |   |   |   |   blockTicks total:0/0 average: 0/0
+[07] |   |   |   |   |   |   |   collect total:0/0 average: 0/0
+
+
+-- Counter: ticksToRun --
+[00] root total:0/0 average: 0/0
+[01] |   tick total:0/0 average: 0/0
+[02] |   |   levels total:0/0 average: 0/0
+[03] |   |   |   ServerLevel[world] minecraft:the_nether total:0/0 average: 0/0
+[04] |   |   |   |   tick total:0/0 average: 0/0
+[05] |   |   |   |   |   tickPending total:0/0 average: 0/0
+[06] |   |   |   |   |   |   fluidTicks total:0/0 average: 0/0
+[07] |   |   |   |   |   |   |   run total:0/0 average: 0/0
+[06] |   |   |   |   |   |   blockTicks total:0/0 average: 0/0
+[07] |   |   |   |   |   |   |   run total:0/0 average: 0/0
+[03] |   |   |   ServerLevel[world] minecraft:overworld total:0/0 average: 0/0
+[04] |   |   |   |   tick total:0/0 average: 0/0
+[05] |   |   |   |   |   tickPending total:0/0 average: 0/0
+[06] |   |   |   |   |   |   fluidTicks total:0/0 average: 0/0
+[07] |   |   |   |   |   |   |   run total:0/0 average: 0/0
+[06] |   |   |   |   |   |   blockTicks total:0/0 average: 0/0
+[07] |   |   |   |   |   |   |   run total:0/0 average: 0/0
+[03] |   |   |   ServerLevel[world] minecraft:the_end total:0/0 average: 0/0
+[04] |   |   |   |   tick total:0/0 average: 0/0
+[05] |   |   |   |   |   tickPending total:0/0 average: 0/0
+[06] |   |   |   |   |   |   fluidTicks total:0/0 average: 0/0
+[07] |   |   |   |   |   |   |   run total:0/0 average: 0/0
+[06] |   |   |   |   |   |   blockTicks total:0/0 average: 0/0
+[07] |   |   |   |   |   |   |   run total:0/0 average: 0/0
+
+
+--- END COUNTER DUMP ---
+

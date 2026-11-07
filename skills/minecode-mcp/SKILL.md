@@ -55,6 +55,7 @@ minecraft_start_session(workspace_path)        # version + breaking changes that
 | Is it a Mojang bug? | `search_mojira` | filters by project, not version; read each issue's affected versions |
 | What did the game log? | `get_logs(filter="errors")` | default launcher, Prism, TLauncher |
 | Does it actually work? | `emulator_*` | see the `datapack-emulator` skill |
+| What does it really cost / why the lag? | `emulator_server_profile` | reads a `/perf start` report from the user's game or server |
 
 ## Source reliability
 
