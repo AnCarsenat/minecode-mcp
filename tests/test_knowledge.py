@@ -38,6 +38,13 @@ def test_migration_has_required_fields(migration):
         f"{migration['id']}: verify_with should name a concrete tool call"
     )
 
+    # ...and that tool must exist (spyglass_get_mcdoc_symbols did not).
+    from minecode.tools import TOOLS
+    tool = migration["verify_with"].split("(", 1)[0].strip()
+    assert tool in {t.name for t in TOOLS}, (
+        f"{migration['id']}: verify_with calls unknown tool '{tool}'"
+    )
+
 
 @pytest.mark.parametrize("migration", knowledge.all_migrations(),
                          ids=lambda m: m["id"])

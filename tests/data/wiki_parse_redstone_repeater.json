@@ -1,0 +1,74 @@
+{
+ "_source": "Trimmed MediaWiki action=parse response for 'Redstone Repeater' from https://minecraft.wiki/api.php (prop=text|sections|categories), fetched November 2026; images removed and text shortened. Wiki content is licensed CC BY-NC-SA 3.0 (https://minecraft.wiki/w/Minecraft_Wiki:Copyrights). Test fixture only.",
+ "parse": {
+  "title": "Redstone Repeater",
+  "pageid": 39659,
+  "text": {
+   "*": "<div class=\"mw-content-ltr mw-parser-output\" lang=\"en\" dir=\"ltr\"><div role=\"note\" class=\"hatnote searchaux\"> <span typeof=\"mw:File\"><span></span></span> This article is about the block.&#32;&#32; For repeater circuits, see <a href=\"/w/Redstone_circuits/Transmission#Repeater\" title=\"Redstone circuits/Transmission\">Redstone circuits/Transmission&#160;\u00a7&#160;Repeater</a>. &#32;&#32;For other uses, see <a href=\"/w/Redstone\" class=\"mw-disambig\" title=\"Redstone\">Redstone</a>.\n</div>\n<div class=\"infobox notaninfobox\">\n<div class=\"mcwiki-header infobox-title\">Redstone Repeater</div>\n<div class=\"infobox-imagearea animated-container\"><div><div id=\"tabber-40c84124055502a1c91014fa1e320618\" class=\"tabber\">\n\t\t\t<div class=\"tabbertab\" data-title=\"Unpowered\">\n\t\t\t\t<p class=\"mw-empty-elt\">\n</p><div><span typeof=\"mw:File\"><a href=\"/w/File:Redstone_Repeater_(N)_JE5_BE2.png\" class=\"mw-file-description\"></a></span><div class=\"infobox-imagecaption\">\n<p><i><a href=\"/w/Java_Edition\" title=\"Java Edition\">Java Edition</a></i>\n</p>\n</div></div>\n<div><span typeof=\"mw:File\"><a href=\"/w/File:Redstone_Repeater_(N)_BE2.png\" class=\"mw-file-description\"></a></span><div class=\"infobox-imagecaption\">\n<p><i><a href=\"/w/Bedrock_Edition\" title=\"Bedrock Edition\">Bedrock Edition</a></i>\n</p>\n</div></div><p class=\"mw-empty-elt\"></p>\n\t\t\t</div>\n\t\t\t<div class=\"tabbertab\" data-title=\"Locked\">\n\t\t\t\t<p class=\"mw-empty-elt\">\n</p><div><span typeof=\"mw:File\"><a href=\"/w/File:Locked_Redstone_Repeater_(N)_JE5.png\" class=\"mw-file-description\"></a></span><div class=\"infobox-imagecaption\">\n<p><i><a href=\"/w/Java_Edition\" title=\"Java Edition\">Java Edition</a></i>\n</p>\n</div></div>\n<div><span typeof=\"mw:File\"><a href=\"/w/File:Locked_Redstone_Repeater_(N)_BE3.png\" class=\"mw-file-description\"></a></span><div class=\"infobox-imagecaption\">\n<p><i><a href=\"/w/Bedrock_Edition\" title=\"Bedrock Edition\">Bedrock Edition</a></i>\n</p>\n</div></div><p class=\"mw-empty-elt\"></p>\n\t\t\t</div>\n\t\t\t<div class=\"tabbertab\" data-title=\"Powered\">\n\t\t\t\t<p class=\"mw-empty-elt\">\n</p><div><span typeof=\"mw:File\"><a href=\"/w/File:Powered_Redstone_Repeater_(N)_JE12.png\" class=\"mw-file-description\"></a></span><div class=\"infobox-imagecaption\">\n<p><i><a href=\"/w/Java_Edition\" title=\"Java Edition\">Java Edition</a></i>\n</p>\n</div></div>\n<div><span typeof=\"mw:File\"><a href=\"/w/File:Powered_Redstone_Repeater_(N)_BE2.png\" class=\"mw-file-description\"></a></span><div class=\"infobox-imagecaption\">\n<p><i><a href=\"/w/Bedrock_Edition\" title=\"Bedrock Edition\">Bedrock Edition</a></i>\n</p>\n</div></div><p class=\"mw-empty-elt\"></p>\n\t\t\t</div>\n\t\t\t<div class=\"tabbertab\" data-title=\"Powered &amp; Locked\">\n\t\t\t\t<p class=\"mw-empty-elt\">\n</p><div><span typeof=\"mw:File\"><a href=\"/w/File:Powered_Locked_Redstone_Repeater_(N)_JE8.png\" class=\"mw-file-description\"></a></span><div class=\"infobox-imagecaption\">\n<p><i><a href=\"/w/Java_Edition\" title=\"Java Edition\">Java Edition</a></i>\n</p>\n</div></div>\n<div><span typeof=\"mw:File\"><a href=\"/w/File:Powered_Locked_Redstone_Repeater_(N)_BE3.png\" class=\"mw-file-description\"></a></span><div class=\"infobox-imagecaption\">\n<p><i><a href=\"/w/Bedrock_Edition\" title=\"Bedrock Edition\">Bedrock Edition</a></i>\n</p>\n</div></div><p class=\"mw-empty-elt\"></p>\n\t\t\t</div></div></div>\n<div class=\"infobox-invimages\"><div><span class=\"invslot\"><span class=\"invslot-item invslot-item-image\"><span typeof=\"mw:File\"><span title=\"Redstone Repeater\"></span></span></span></span></div></div></div><div class=\"infobox-extratext\"><a href=\"#Renders\">View all renders</a></div>\n<table class=\"infobox-rows\" cellspacing=\"1\" cellpadding=\"4\">\n\n<tbody><tr>\n<th><a href=\"/w/Tooltip#Item_description\" title=\"Tooltip\">Item description</a>&#8204;<sup class=\"nowrap Inline-Template\" title=\"\">[<i><span title=\"This statement only applies to Bedrock Edition\"><a href=\"/w/Bedrock_Edition\" title=\"Bedrock Edition\">BE</a>  only</span></i>]</sup>\n</th>\n<td>Add signal delay\n</td></tr>\n\n\n\n\n\n<tr>\n<th><a href=\"/w/Renewable_resource\" title=\"Renewable resource\">Renewable</a>\n</th>\n<td>Yes\n</td></tr>\n<tr>\n<th>Stackable\n</th>\n<td>Yes (64)\n</td></tr>\n<tr>\n<th>Tool\n</th>\n<td class=\"pixel-image cancelLink\">Any tool\n</td></tr>\n<tr>\n<th><a href=\"/w/Explosion#Blast_resistance\" title=\"Explosion\">Blast resistance</a>\n</th>\n<td>0\n</td></tr>\n<tr>\n<th><a href=\"/w/Breaking#Blocks_by_hardness\" title=\"Breaking\">Hardness</a>\n</th>\n<td>0\n</td></tr>\n\n<tr>\n<th><a href=\"/w/Light\" title=\"Light\">Luminous</a>\n</th>\n<td>No\n</td></tr>\n<tr>\n<th><a href=\"/w/Opacity\" title=\"Opacity\">Transparent</a>\n</th>\n<td>Yes\n</td></tr>\n<tr>\n<th><a href=\"/w/Waterlogging\" title=\"Waterlogging\">Waterloggable</a>\n</th>\n<td><b><a href=\"/w/Java_Edition\" title=\"Java Edition\">JE</a>:</b> No<br /><b><a href=\"/w/Bedrock_Edition\" title=\"Bedrock Edition\">BE</a>:</b> Yes\n</td></tr>\n<tr>\n<th><a href=\"/w/Fire#Flammable_blocks\" title=\"Fire\">Flammable</a>\n</th>\n<td>No\n</td></tr>\n<tr>\n<th>Catches fire<br />from <a href=\"/w/Lava\" title=\"Lava\">lava</a>\n</th>\n<td>No\n</td></tr>\n<tr>\n<th><a href=\"/w/Map_item_format#Color_table\" title=\"Map item format\">Map color</a>\n</th>\n<td><span style=\"white-space: nowrap;\"><span style=\"display: inline-block; background-color: rgb(); border: 1px solid #888; border-radius: 0.3em; color: transparent; width: 1em; height: 1em; vertical-align: -0.36em; margin-right: -0.1em\"><br /></span>&#160;0 NONE</span>\n</td></tr>\n<tr>\n<th><a href=\"/w/Note_Block#Instruments\" title=\"Note Block\">Note block instrument</a>\n</th>\n<td>Default (Harp)\n</td></tr>\n\n</tbody></table>\n<pre class=\"history-json noexcerpt navigation-not-searchable\">{\"title\": \"Redstone Repeater\"}</pre>\n</div>\n<p>A <b>redstone repeater</b>&#x200b;<sup class=\"nowrap Inline-Template\" title=\"\">[<i><span title=\"This statement does not apply to upcoming versions of Minecraft\">until:</span> <a href=\"/w/Bedrock_Edition_26.70\" title=\"Bedrock Edition 26.70\">BE 26.70</a></i>]</sup> or <b>repeater</b>&#x200b;<sup class=\"nowrap Inline-Template\" title=\"\">[<i><span title=\"This statement applies only to upcoming versions of Minecraft.\">upcoming:</span> <a href=\"/w/Bedrock_Edition_26.70\" title=\"Bedrock Edition 26.70\">BE 26.70</a></i>]</sup> is a <a href=\"/w/Block\" title=\"Block\">block</a> that produces a full-strength <a href=\"/w/Redstone\" class=\"mw-disambig\" title=\"Redstone\">redstone</a> signal from its front while its back is powered, with four <span class=\"explain\" title=\"Defaults to right click on mouse or left trigger on controller.\">toggleable</span> delay settings. It can also be locked into its current power state by directly powering its side with another repeater or a <a href=\"/w/Redstone_comparator\" class=\"mw-redirect\" title=\"Redstone comparator\">redstone comparator</a>.\n</p>\n\n<div class=\"mw-heading mw-heading2\"><h2 id=\"Obtaining\">Obtaining</h2><span class=\"mw-editsection\"><span class=\"mw-editsection-bracket\">[</span><a href=\"/w/Redstone_Repeater?section=1&amp;veaction=edit\" title=\"Edit section: Obtaining\" class=\"mw-editsection-visualeditor\"><span>edit</span></a><span class=\"mw-editsection-divider\"> | </span><a href=\"/w/Redstone_Repeater?action=edit&amp;section=1\" title=\"Edit section&#039;s source code: Obtaining\"><span>edit source</span></a><span class=\"mw-editsection-bracket\">]</span></span></div>\n<div class=\"mw-heading mw-heading3\"><h3 id=\"Breaking\">Breaking</h3><span class=\"mw-editsection\"><span class=\"mw-editsection-bracket\">[</span><a href=\"/w/Redstone_Repeater?section=2&amp;veaction=edit\" title=\"Edit section: Breaking\" class=\"mw-editsection-visualeditor\"><span>edit</span></a><span class=\"mw-editsection-divider\"> | </span><a href=\"/w/Redstone_Repeater?action=edit&amp;section=2\" title=\"Edit section&#039;s source code: Breaking\"><span>edit source</span></a><span class=\"mw-editsection-bracket\">]</span></span></div>\n<p>A redstone repeater can be <a href=\"/w/Instant_mining\" title=\"Instant mining\">broken instantly</a> using any <a href=\"/w/Tool\" title=\"Tool\">tool</a>, or without a tool, and drops itself as an item. To remove a redstone repeater, <span class=\"explain\" title=\"Defaults to holding left click on mouse or right trigger on controller.\">mine</span> it.\n<style data-mw-deduplicate=\"TemplateStyles:r3780784\">.mw-parser-output .breakingrow-breakingtime-value[data-calculator-field-value=\"0.05000\"],.mw-parser-output .breakingrow-breakingtime-value.breakingrow-instant:not([data-calculator-field-value]){font-style:italic}.mw-parser-output .breakingrow-container{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 18px;min-width:min-content}</style>\n</p>\n<div style=\"--calculator-hasteLevel: 0;\" class=\"calculator-container breakingrow-container\"><div>\n<table class=\"wikitable\" style=\"text-align: center; margin: 0;\">\n\n<tbody><tr>\n<th>Block\n</th>\n<th><span class=\"nowrap\"><span class=\"sprite-file\" style=\"\"><span class=\"pixel-image\" typeof=\"mw:File\"><a href=\"/w/Redstone_Repeater\" title=\"Redstone Repeater\"></a></span></span><a class=\"mw-selflink selflink\"><span class=\"sprite-text\">Redstone Repeater</span></a></span>\n</th></tr>\n<tr>\n<th>Hardness\n</th>\n<td>0\n</td></tr>\n<tr>\n<th colspan=\"3\"><a href=\"/w/Breaking\" title=\"Breaking\">Breaking</a> time (secs)\n</th></tr>\n<tr>\n<th>Default\n</th>\n<td style=\"\" class=\"tc-yes\"><span class=\"calculator-field\" data-calculator-id=\"calculator-field-perTick1\" data-calculator-type=\"hidden\" style=\"display:none;\" data-calculator-formula=\"...\">1</span><span class=\"calculator-field breakingrow-breakingtime-value breakingrow-instant\" data-calculator-id=\"calculator-field-JE1\" data-calculator-type=\"plain\" data-calculator-formula=\"...\">0.05</span><style data-mw-deduplicate=\"TemplateStyles:r2826850\">.mw-parser-output .calculator-hideifzero.calculator-value-false{display:none}</style><span class=\"calculator-field calculator-hideifzero calculator-value-false\" data-calculator-type=\"passthru\" data-calculator-formula=\"...\">&#160;(JE)<br /><span class=\"calculator-field breakingrow-breakingtime-value breakingrow-instant\" data-calculator-id=\"calculator-field-BE1\" data-calculator-type=\"plain\" data-calculator-formula=\"...\">0.05</span>&#160;(BE)</span>\n</td></tr>\n</tbody></table>\n</div><div><b>Legend</b>\n<ul><li><div class=\"legend\" style=\"display: flex; align-items: center; gap: 4px;\"><span class=\"legend-label tc-no\" style=\"display: inline-block; min-width: 1.25em; height: 1.25em; line-height: 1.25; margin: 1px 0; text-align: center; border: 1px solid black; background-color: ; color: black;\"></span> incorrect tool, drops nothing</div></li>\n<li><div class=\"legend\" style=\"display: flex; align-items: center; gap: 4px;\"><span class=\"legend-label tc-partial\" style=\"display: inline-block; min-width: 1.25em; height: 1.25em; line-height: 1.25; margin: 1px 0; text-align: center; border: 1px solid black; background-color: ; color: black;\"></span> correct tool, drops nothing or something other than the block itself</div></li>\n<li><div class=\"legend\" style=\"display: flex; align-items: center; gap: 4px;\"><span class=\"legend-label tc-yes\" style=\"display: inline-block; min-width: 1.25em; height: 1.25em; line-height: 1.25; margin: 1px 0; text-align: center; border: 1px solid black; background-color: ; color: black;\"></span> correct tool, drops the block itself</div></li>\n<li><i>italicized</i> can be <a href=\"/w/Instant_mining\" title=\"Instant mining\">instant mined</a></li></ul>\n</div></div>\n<p>A redstone repeater is removed and drops as an item if:\n</p>\n<ul><li>its attachment block is moved, removed, or destroyed;</li>\n<li><a href=\"/w/Water\" title=\"Water\">water</a> or <a href=\"/w/Lava\" title=\"Lava\">lava</a> flows into its space;&#8204;<sup class=\"nowrap Inline-Template\" title=\"\">[<i><span title=\"This statement only applies to Java Edition\"><a href=\"/w/Java_Edition\" title=\"Java Edition\">Java Edition</a>  only</span></i>]</sup></li>\n<li>a <a href=\"/w/Piston\" title=\"Piston\">piston</a> tries to push it or moves a block into its space.</li></ul>\n\n<table class=\"navbox hlist collapsible navbox-top\"><tbody><tr><th class=\"navbox-title\">Redstone</th></tr><tr><td><a href=\"/w/Redstone_Dust\">Redstone Dust</a> <a href=\"/w/Redstone_Comparator\">Redstone Comparator</a></td></tr></tbody></table>\n</div>"
+  },
+  "sections": [
+   {
+    "toclevel": 1,
+    "level": "2",
+    "line": "Obtaining",
+    "number": "1",
+    "index": "1",
+    "anchor": "Obtaining"
+   },
+   {
+    "toclevel": 2,
+    "level": "3",
+    "line": "Breaking",
+    "number": "1.1",
+    "index": "2",
+    "anchor": "Breaking"
+   },
+   {
+    "toclevel": 2,
+    "level": "3",
+    "line": "Natural generation",
+    "number": "1.2",
+    "index": "3",
+    "anchor": "Natural_generation"
+   },
+   {
+    "toclevel": 2,
+    "level": "3",
+    "line": "Crafting",
+    "number": "1.3",
+    "index": "4",
+    "anchor": "Crafting"
+   },
+   {
+    "toclevel": 1,
+    "level": "2",
+    "line": "Usage",
+    "number": "2",
+    "index": "5",
+    "anchor": "Usage"
+   },
+   {
+    "toclevel": 2,
+    "level": "3",
+    "line": "Signal transmission",
+    "number": "2.1",
+    "index": "6",
+    "anchor": "Signal_transmission"
+   }
+  ],
+  "categories": [
+   {
+    "sortkey": "",
+    "*": "Renewable_resources"
+   },
+   {
+    "sortkey": "",
+    "*": "Stackable_resources"
+   },
+   {
+    "sortkey": "",
+    "*": "Upcoming"
+   }
+  ]
+ }
+}

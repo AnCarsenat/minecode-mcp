@@ -421,14 +421,38 @@ def handle_get_wiki_page(title: str, sentences: int = 5, full: bool = False) -> 
     """
     try:
         if full:
-            content = minecraftwiki.get_page_content(title)
-            if not content:
-                return _fail(f"page '{title}' not found or could not be parsed")
+            try:
+                content = minecraftwiki.get_page_content(title)
+                full_error = None
+            except Exception as e:
+                logger.warning("Full wiki page %r failed: %s", title, e)
+                content, full_error = None, str(e)
+            if content:
+                return _with_wiki_warning({
+                    "success": True,
+                    "title": content.title,
+                    "mode": "full",
+                    "truncated": content.truncated,
+                    "content": minecraftwiki.page_content_to_dict(content),
+                })
+            # A full page that fails should still give the agent something:
+            # fall back to the summary and say so.
+            extract = minecraftwiki.get_page_extract(title, sentences=sentences)
+            if not extract:
+                if full_error:
+                    return _fail(f"page '{title}' could not be fetched: {full_error}")
+                return _fail(f"page '{title}' not found")
             return _with_wiki_warning({
                 "success": True,
                 "title": title,
-                "mode": "full",
-                "content": minecraftwiki.page_content_to_dict(content),
+                "mode": "summary",
+                "url": f"https://minecraft.wiki/w/{title.replace(' ', '_')}",
+                "extract": extract,
+                "note": (
+                    "The full page could not be retrieved"
+                    + (f" ({full_error})" if full_error else "")
+                    + "; this is the summary instead."
+                ),
             })
 
         extract = minecraftwiki.get_page_extract(title, sentences=sentences)
@@ -712,6 +736,11 @@ def handle_spyglass_get_mcdoc_symbol(symbol: str, depth: int = 3) -> dict:
         if result is None:
             close = spyglass.search_mcdoc_symbols(symbol.rsplit("::", 1)[-1], limit=15)
             return _fail(f"mcdoc symbol '{symbol}' not found", did_you_mean=close)
+        if "ambiguous" in result:
+            return _fail(
+                f"mcdoc symbol '{symbol}' matches several symbols; pass one of them",
+                did_you_mean=result["ambiguous"],
+            )
 
         result["success"] = True
         result["note"] = (

@@ -349,8 +349,10 @@ TOOLS = [
             "Search for mcdoc symbol paths by keyword. mcdoc is the machine-"
             "readable type definition for every Minecraft data structure -- item "
             "components, NBT, loot tables, predicates, text components. Returns "
-            "paths only. Use this first when you do not know a symbol's full path, "
-            "then call spyglass_get_mcdoc_symbol for the definition."
+            "paths only. Entity, block entity and component ids are returned as "
+            "dispatcher entries, e.g. 'minecraft:entity[item_display]'. Use this "
+            "first when you do not know a symbol's full path, then call "
+            "spyglass_get_mcdoc_symbol for the definition."
         ),
         inputSchema={
             "type": "object",
@@ -369,13 +371,16 @@ TOOLS = [
             "mcdoc -- which fields exist, their types, and which are optional. "
             "THE AUTHORITY on 'what fields does this accept'. Use when writing item "
             "components, NBT, or any datapack JSON whose shape you are unsure of. "
-            "Find the path with spyglass_search_mcdoc_symbols first."
+            "Structs come back as a flat field list including inherited fields "
+            "(spreads such as ...DisplayBase / EntityBase are followed), with "
+            "since/until versions per field. Find the path with "
+            "spyglass_search_mcdoc_symbols first."
         ),
         inputSchema={
             "type": "object",
             "properties": {
-                "symbol": {"type": "string", "description": "Fully-qualified path, e.g. 'java::world::item::ItemStack'. A unique tail name also works."},
-                "depth": {"type": "integer", "description": "Levels of nested types to expand (1-6, default 3). Raise only if the answer is truncated."},
+                "symbol": {"type": "string", "description": "Fully-qualified path, e.g. '::java::world::item::ItemStack' (leading '::' optional), a unique tail name ('ItemStack'), or a dispatcher entry ('minecraft:entity[item_display]' or just 'item_display')."},
+                "depth": {"type": "integer", "description": "Levels of inline nested structs to expand (1-6, default 3). Named types are listed in referenced_symbols, not inlined. Raise only if the result says truncated: true."},
             },
             "required": ["symbol"],
         },

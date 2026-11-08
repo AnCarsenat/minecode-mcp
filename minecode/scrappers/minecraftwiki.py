@@ -24,7 +24,7 @@ layer -- see WIKI_VERSION_WARNING.
 import logging
 import requests
 from bs4 import BeautifulSoup
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 import re
 
@@ -79,9 +79,17 @@ class PageContent:
     title: str
     pageid: int
     url: str
-    extract: str  # Plain text summary
+    extract: str  # Plain text of the page body, capped at MAX_PAGE_CHARS
     sections: List[Dict[str, Any]]
     categories: List[str]
+    # Header/value rows of the page's infobox (blocks, items, mobs), e.g.
+    # {"Blast resistance": "0", "Hardness": "0"}. Empty when there is none.
+    infobox: Dict[str, str] = field(default_factory=dict)
+    truncated: bool = False
+    full_length: int = 0  # length of the body text before the cap
+    redirected_from: Optional[str] = None
+    # Anything the agent should know about how complete this result is.
+    notes: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -211,23 +219,151 @@ def get_page_extract(title: str, sentences: int = 5) -> Optional[str]:
     return None
 
 
+# Cap on the body text of a full page. Block pages run to 30-60k characters of
+# text (sound tables, data values, history); returning all of it crowds out
+# the agent's work. Truncation is always reported, never silent.
+MAX_PAGE_CHARS = 12000
+
+# Page furniture that is not content: edit links, navigation boxes, the
+# infobox's raw history JSON, citation markers.
+_NOISE_SELECTORS = (
+    "script", "style", ".mw-editsection", ".navbox", ".history-json",
+    "sup.reference", ".mw-cite-backlink",
+    # Hidden calculator inputs: "1" + "0.05" read as "10.05" otherwise.
+    '[style*="display:none"]', '[style*="display: none"]',
+)
+
+
+def _decompose_all(elements) -> None:
+    """
+    Decompose a precomputed list of elements.
+
+    The list can hold an element AND its descendants (an infobox and the
+    tables nested in it). Decomposing the parent destroys the children too,
+    and bs4 clears a destroyed tag's attributes, so touching one afterwards
+    raises AttributeError. That is how every page with a nested infobox --
+    "Redstone Repeater", "Hopper", "Creeper" -- failed with
+    "'NoneType' object has no attribute 'get'". Skip what is already gone.
+    """
+    for el in elements:
+        if getattr(el, "decomposed", False):
+            continue
+        el.decompose()
+
+
+def _clean_text(text: str) -> str:
+    text = text.replace("\u200b", "").replace("\u200c", "").replace("\xa0", " ")
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r" ?\n ?", "\n", text)
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
+_BLOCK_TAGS = (
+    "p", "div", "li", "dd", "dt", "tr", "table", "pre", "ul", "ol", "dl",
+    "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "figure", "figcaption",
+)
+
+
+def _soup_text(soup: BeautifulSoup) -> str:
+    """
+    Text with line breaks only at block elements and table cells.
+
+    get_text(separator="\\n") put every link and bold word on its own line,
+    which tripled the line count of a page and split sentences apart.
+    """
+    for row in soup.find_all("tr"):
+        for s in list(row.find_all(string=True, recursive=False)):
+            if not s.strip():
+                s.extract()
+    for cell in soup.find_all(["td", "th"]):
+        # Source newlines inside a cell would split "Hardness | 0" apart.
+        for s in list(cell.find_all(string=True)):
+            if "\n" in s:
+                s.replace_with(s.replace("\n", " "))
+        cell.append(" | ")
+    for br in soup.find_all("br"):
+        br.replace_with("\n")
+    for tag in soup.find_all(_BLOCK_TAGS):
+        tag.insert_before("\n")
+        tag.append("\n")
+    text = soup.get_text()
+    text = re.sub(r"[ \t]*\|[ \t]*(?=\n|$)", "", text)  # trailing cell separators
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    return text
+
+
+def _extract_infobox(soup: BeautifulSoup) -> Dict[str, str]:
+    """Header/value rows of every infobox on the page."""
+    rows: Dict[str, str] = {}
+    for box in soup.select(".infobox"):
+        for tr in box.select("tr"):
+            th, td = tr.find("th"), tr.find("td")
+            if th is None or td is None:
+                continue
+            for sup in th.select("sup"):  # "[BE only]" edition markers
+                sup.extract()
+            key = _clean_text(th.get_text(" ", strip=True))
+            value = _clean_text(td.get_text(" ", strip=True))
+            if key and key not in rows:
+                rows[key] = value
+    return rows
+
+
+def html_to_page_text(html: str):
+    """
+    Turn a parsed wiki page into (text, infobox, notes).
+
+    Never raises: a step that fails is skipped and reported in `notes`, so a
+    page whose markup changes upstream still yields partial content.
+    """
+    notes: List[str] = []
+    if not html:
+        return "", {}, ["the wiki returned no page HTML"]
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+    except Exception as e:  # pragma: no cover - html.parser is lenient
+        logger.warning("HTML parse failed: %s", e)
+        text = _clean_text(re.sub(r"<[^>]+>", "\n", html))
+        return text, {}, [f"HTML could not be parsed ({e}); tags were stripped instead"]
+
+    infobox: Dict[str, str] = {}
+    try:
+        infobox = _extract_infobox(soup)
+    except Exception as e:
+        logger.warning("Infobox extraction failed: %s", e)
+        notes.append(f"infobox could not be read ({e}); it is omitted")
+
+    try:
+        _decompose_all(soup.select(", ".join(_NOISE_SELECTORS)))
+        _decompose_all(soup.select(".infobox"))
+    except Exception as e:
+        logger.warning("Page cleanup failed: %s", e)
+        notes.append(f"page cleanup failed ({e}); text may include navigation")
+
+    try:
+        text = _soup_text(soup)
+    except Exception as e:
+        logger.warning("Text extraction failed: %s", e)
+        text = re.sub(r"<[^>]+>", "\n", html)
+        notes.append(f"text extraction failed ({e}); tags were stripped instead")
+    return _clean_text(text), infobox, notes
+
+
 def get_page_content(title: str) -> Optional[PageContent]:
     """
     Get full parsed content of a page including sections and categories.
-    
-    Args:
-        title: Page title
-    
-    Returns:
-        PageContent object or None if page not found
+
+    Follows redirects. Returns None only when the page does not exist; a page
+    that exists but parses badly comes back partial, with `notes` saying why.
     """
     params = {
         "action": "parse",
         "page": title,
         "prop": "text|sections|categories",
-        "disabletoc": True
+        "disabletoc": True,
+        "redirects": True,
     }
-    
+
     try:
         data = _make_request(params)
     except requests.exceptions.HTTPError:
@@ -237,43 +373,67 @@ def get_page_content(title: str) -> Optional[PageContent]:
         return None
     if "error" in data:
         return None
-    
-    parse = data.get("parse", {})
-    
-    # Extract plain text from HTML
-    html = ""
-    if isinstance(parse, dict):
-        html = parse.get("text", {}).get("*", "") if parse.get("text") else ""
-    soup = BeautifulSoup(html, "html.parser")
-    
-    # Remove unwanted elements
-    for elem in soup.find_all(["script", "style", "table", "div"]):
-        if elem.get("class") and "infobox" in " ".join(elem.get("class", [])):
-            elem.decompose()
-    
-    # Get text content
-    text = soup.get_text(separator="\n", strip=True)
-    # Clean up excessive whitespace
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    
-    # Extract sections
+
+    parse = data.get("parse")
+    if not isinstance(parse, dict):
+        return None
+
+    text_field = parse.get("text")
+    if isinstance(text_field, dict):
+        html = text_field.get("*", "")
+    else:  # formatversion=2 returns the HTML as a plain string
+        html = text_field or ""
+
+    text, infobox, notes = html_to_page_text(html)
+
+    full_length = len(text)
+    truncated = full_length > MAX_PAGE_CHARS
+    if truncated:
+        cut = text.rfind("\n", 0, MAX_PAGE_CHARS)
+        text = text[: cut if cut > MAX_PAGE_CHARS // 2 else MAX_PAGE_CHARS]
+        notes.append(
+            f"text truncated to {len(text)} of {full_length} characters; "
+            "the infobox and the section list cover the whole page. Read the "
+            "rest at the page URL, or use search_wiki for a specific topic."
+        )
+
+    def _plain(s: str) -> str:  # section titles can carry <i>, <span>
+        return re.sub(r"<[^>]+>", "", s or "")
+
     sections = [
-        {"index": s["index"], "level": s["level"], "name": s["line"]}
-        for s in parse.get("sections", [])
+        {"index": s.get("index"), "level": int(s.get("level") or 0),
+         "name": _plain(s.get("line", ""))}
+        for s in parse.get("sections") or [] if isinstance(s, dict)
     ]
-    
-    # Extract categories
     categories = [
-        cat["*"] for cat in parse.get("categories", [])
+        cat.get("*", "") for cat in parse.get("categories") or []
+        if isinstance(cat, dict)
     ]
-    
+    if any("disambiguation" in c.lower() for c in categories):
+        notes.append(
+            "this is a disambiguation page: it lists other pages. Fetch the "
+            "specific one you need."
+        )
+
+    redirects = parse.get("redirects") or []
+    redirected_from = redirects[0].get("from") if redirects and isinstance(redirects[0], dict) else None
+
+    real_title = parse.get("title") or title
+    if not text and not infobox:
+        notes.append("no readable text was found on this page")
+
     return PageContent(
-        title=parse.get("title", title),
+        title=real_title,
         pageid=parse.get("pageid", 0),
-        url=f"{PAGE_URL}{title.replace(' ', '_')}",
-        extract=text[:5000],  # Limit size
+        url=f"{PAGE_URL}{real_title.replace(' ', '_')}",
+        extract=text,
         sections=sections,
-        categories=categories
+        categories=categories,
+        infobox=infobox,
+        truncated=truncated,
+        full_length=full_length,
+        redirected_from=redirected_from,
+        notes=notes,
     )
 
 
@@ -509,7 +669,12 @@ def page_content_to_dict(content: Optional[PageContent]) -> Optional[dict]:
         "url": content.url,
         "extract": content.extract,
         "sections": content.sections,
-        "categories": content.categories
+        "categories": content.categories,
+        "infobox": content.infobox,
+        "truncated": content.truncated,
+        "full_length": content.full_length,
+        "redirected_from": content.redirected_from,
+        "notes": content.notes,
     }
 
 

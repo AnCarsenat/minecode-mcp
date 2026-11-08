@@ -60,7 +60,7 @@
         {
           "pattern": "\\b(give|item|clear|loot|setblock|fill)\\b[^\\n]*?\\b(minecraft:)?[a-z0-9_]+\\{[A-Za-z]",
           "kind": "command",
-          "message": "Item NBT in braces {}. On 1.20.5+ items take components in brackets [] instead. Look up the correct component with spyglass_get_mcdoc_symbols."
+          "message": "Item NBT in braces {}. On 1.20.5+ items take components in brackets [] instead. Look up the correct component with spyglass_search_mcdoc_symbols, then spyglass_get_mcdoc_symbol."
         },
         {
           "pattern": "\"(Enchantments|AttributeModifiers|CustomModelData|Unbreakable|HideFlags)\"\\s*:",
@@ -158,7 +158,7 @@
           "message": "Numeric operation. Use the string form: add_value, add_multiplied_base, or add_multiplied_total."
         }
       ],
-      "verify_with": "spyglass_get_mcdoc_symbols(symbol='java::world::item::component::AttributeModifiers')"
+      "verify_with": "spyglass_get_mcdoc_symbol(symbol='::java::world::component::item::AttributeModifiers')"
     },
 
     {
@@ -243,7 +243,7 @@
           "message": "Item predicate using \"nbt\". On 1.20.5+ use \"components\" (exact) or \"predicates\" (partial/ranged)."
         }
       ],
-      "verify_with": "spyglass_get_mcdoc_symbols(symbol='java::data::advancement::predicate::ItemPredicate')"
+      "verify_with": "spyglass_get_mcdoc_symbol(symbol='::java::data::advancement::predicate::ItemPredicate')"
     },
 
     {
@@ -291,7 +291,7 @@
           "message": "Pre-1.21.2 food component field. saturation_modifier became saturation; eat_seconds moved to the consumable component as consume_seconds."
         }
       ],
-      "verify_with": "spyglass_get_mcdoc_symbols(symbol='java::world::item::component::Food')"
+      "verify_with": "spyglass_get_mcdoc_symbol(symbol='::java::world::component::item::Food')"
     },
 
     {
