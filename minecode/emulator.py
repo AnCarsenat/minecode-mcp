@@ -106,21 +106,31 @@ def handle_emulator_check(path: Optional[str] = None, version: Optional[str] = N
 def handle_emulator_run(path: Optional[str] = None, version: Optional[str] = None,
                         ticks: int = 20, commands: Optional[List[str]] = None,
                         players: int = 1, level: str = "info", max_records: int = 100,
-                        entities: bool = False, download_client_jar: bool = False) -> dict:
+                        entities: bool = False, download_client_jar: bool = False,
+                        unloaded_chunks: Optional[List[Any]] = None,
+                        max_output_per_command: Optional[int] = None) -> dict:
+    extra: Dict[str, Any] = {}
+    if unloaded_chunks:
+        extra["unloaded_chunks"] = list(unloaded_chunks)
+    if max_output_per_command is not None:
+        extra["max_output_per_command"] = max_output_per_command
     return _call("emulator_run", "run", packs=_path(path), version=_version(version),
                  ticks=ticks, commands=list(commands or []), players=players, level=level,
-                 max_records=max_records, entities=entities, download=download_client_jar)
+                 max_records=max_records, entities=entities, download=download_client_jar,
+                 **extra)
 
 
 def handle_emulator_test(tests: List[Any], path: Optional[str] = None,
                          version: Optional[str] = None, versions: Optional[List[str]] = None,
                          checks: Optional[List[str]] = None, expect: str = "",
                          expect_value: str = "", ticks: Optional[int] = None,
-                         players: int = 1, download_client_jar: bool = False) -> dict:
+                         players: int = 1, download_client_jar: bool = False,
+                         unloaded_chunks: Optional[List[Any]] = None) -> dict:
+    extra: Dict[str, Any] = {"unloaded_chunks": list(unloaded_chunks)} if unloaded_chunks else {}
     return _call("emulator_test", "test", packs=_path(path), tests=list(tests or []),
                  version=_version(version), versions=versions, checks=list(checks or []),
                  expect=expect, expect_value=expect_value, ticks=ticks, players=players,
-                 download=download_client_jar)
+                 download=download_client_jar, **extra)
 
 
 def handle_emulator_matrix(path: Optional[str] = None, versions: Optional[List[str]] = None,
