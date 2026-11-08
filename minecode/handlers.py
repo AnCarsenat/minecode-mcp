@@ -736,6 +736,11 @@ def handle_spyglass_get_mcdoc_symbol(symbol: str, depth: int = 3) -> dict:
         if result is None:
             close = spyglass.search_mcdoc_symbols(symbol.rsplit("::", 1)[-1], limit=15)
             return _fail(f"mcdoc symbol '{symbol}' not found", did_you_mean=close)
+        if "ambiguous" in result:
+            return _fail(
+                f"mcdoc symbol '{symbol}' matches several symbols; pass one of them",
+                did_you_mean=result["ambiguous"],
+            )
 
         result["success"] = True
         result["note"] = (

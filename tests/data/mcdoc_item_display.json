@@ -1,0 +1,335 @@
+{
+ "ref": "fixture",
+ "mcdoc": {
+  "::java::world::entity::EntityBase": {
+   "kind": "struct",
+   "fields": [
+    {
+     "kind": "pair",
+     "key": "Pos",
+     "type": {
+      "kind": "list",
+      "item": {
+       "kind": "double"
+      },
+      "lengthRange": {
+       "kind": 0,
+       "min": 3,
+       "max": 3
+      }
+     },
+     "optional": true
+    },
+    {
+     "kind": "pair",
+     "attributes": [
+      {
+       "name": "until",
+       "value": {
+        "kind": "literal",
+        "value": {
+         "kind": "string",
+         "value": "1.21.5"
+        }
+       }
+      }
+     ],
+     "desc": "How far the entity has fallen.",
+     "key": "FallDistance",
+     "type": {
+      "kind": "float"
+     },
+     "optional": true
+    },
+    {
+     "kind": "pair",
+     "attributes": [
+      {
+       "name": "since",
+       "value": {
+        "kind": "literal",
+        "value": {
+         "kind": "string",
+         "value": "1.21.5"
+        }
+       }
+      }
+     ],
+     "desc": "How far the entity has fallen.",
+     "key": "fall_distance",
+     "type": {
+      "kind": "double"
+     },
+     "optional": true
+    },
+    {
+     "kind": "pair",
+     "key": "CustomName",
+     "type": {
+      "kind": "union",
+      "members": [
+       {
+        "kind": "string",
+        "attributes": [
+         {
+          "name": "until",
+          "value": {
+           "kind": "literal",
+           "value": {
+            "kind": "string",
+            "value": "1.21.5"
+           }
+          }
+         },
+         {
+          "name": "text_component"
+         }
+        ]
+       },
+       {
+        "kind": "reference",
+        "path": "::java::util::text::Text",
+        "attributes": [
+         {
+          "name": "since",
+          "value": {
+           "kind": "literal",
+           "value": {
+            "kind": "string",
+            "value": "1.21.5"
+           }
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "optional": true
+    },
+    {
+     "kind": "pair",
+     "desc": "Labelling tags on the entity.",
+     "key": "Tags",
+     "type": {
+      "kind": "list",
+      "item": {
+       "kind": "string",
+       "attributes": [
+        {
+         "name": "tag"
+        }
+       ]
+      }
+     },
+     "optional": true
+    },
+    {
+     "kind": "pair",
+     "attributes": [
+      {
+       "name": "since",
+       "value": {
+        "kind": "literal",
+        "value": {
+         "kind": "string",
+         "value": "26.3"
+        }
+       }
+      }
+     ],
+     "desc": "Team to join when it is spawned.",
+     "key": "Team",
+     "type": {
+      "kind": "string",
+      "attributes": [
+       {
+        "name": "team"
+       }
+      ]
+     },
+     "optional": true
+    }
+   ]
+  },
+  "::java::world::entity::display::DisplayBase": {
+   "kind": "struct",
+   "fields": [
+    {
+     "kind": "spread",
+     "type": {
+      "kind": "reference",
+      "path": "::java::world::entity::EntityBase"
+     }
+    },
+    {
+     "kind": "pair",
+     "desc": "Transformation applied to model (after normal entity orientation). Defaults to identity. Interpolated.",
+     "key": "transformation",
+     "type": {
+      "kind": "reference",
+      "path": "::java::world::entity::display::Transformation"
+     },
+     "optional": true
+    },
+    {
+     "kind": "pair",
+     "desc": "Strength of the shadow. Controls the opacity of the shadow as a function of distance to the block below. Defaults to 1. ",
+     "key": "shadow_strength",
+     "type": {
+      "kind": "float",
+      "valueRange": {
+       "kind": 0,
+       "min": 0,
+       "max": 1
+      }
+     },
+     "optional": true
+    },
+    {
+     "kind": "pair",
+     "attributes": [
+      {
+       "name": "since",
+       "value": {
+        "kind": "literal",
+        "value": {
+         "kind": "string",
+         "value": "1.20.2"
+        }
+       }
+      }
+     ],
+     "desc": "How long in game ticks the entity takes to interpolate from its starting location to its destination when teleported. De",
+     "key": "teleport_duration",
+     "type": {
+      "kind": "int",
+      "valueRange": {
+       "kind": 0,
+       "min": 0,
+       "max": 59
+      }
+     },
+     "optional": true
+    },
+    {
+     "kind": "pair",
+     "desc": "Controls if the model should pivot to face the player when rendered. Defaults to `fixed`.",
+     "key": "billboard",
+     "type": {
+      "kind": "reference",
+      "path": "::java::world::entity::display::Billboard"
+     },
+     "optional": true
+    }
+   ]
+  },
+  "::java::world::entity::display::ItemDisplay": {
+   "kind": "struct",
+   "fields": [
+    {
+     "kind": "spread",
+     "type": {
+      "kind": "reference",
+      "path": "::java::world::entity::display::DisplayBase"
+     }
+    },
+    {
+     "kind": "pair",
+     "desc": "Item stack to display.",
+     "key": "item",
+     "type": {
+      "kind": "reference",
+      "path": "::java::world::item::ItemStack"
+     },
+     "optional": true
+    },
+    {
+     "kind": "pair",
+     "desc": "Describes item model transform applied to item (as defined in the `display` section in model JSON). Defaults to `fixed`.",
+     "key": "item_display",
+     "type": {
+      "kind": "reference",
+      "path": "::java::assets::model::ItemDisplayContext"
+     },
+     "optional": true
+    }
+   ]
+  },
+  "::java::world::item::leather_armor::ColorDisplay": {
+   "kind": "struct",
+   "fields": []
+  },
+  "::java::world::item::map::ColorDisplay": {
+   "kind": "struct",
+   "fields": []
+  },
+  "::test::Nested": {
+   "kind": "struct",
+   "fields": [
+    {
+     "kind": "pair",
+     "key": "outer",
+     "type": {
+      "kind": "struct",
+      "fields": [
+       {
+        "kind": "pair",
+        "key": "inner",
+        "type": {
+         "kind": "struct",
+         "fields": [
+          {
+           "kind": "pair",
+           "key": "leaf",
+           "type": {
+            "kind": "int"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    },
+    {
+     "kind": "spread",
+     "type": {
+      "kind": "dispatcher",
+      "parallelIndices": [
+       {
+        "kind": "dynamic",
+        "accessor": [
+         "type"
+        ]
+       }
+      ],
+      "registry": "minecraft:entity"
+     }
+    },
+    {
+     "kind": "pair",
+     "key": "volume",
+     "type": {
+      "kind": "float",
+      "valueRange": {
+       "kind": 2,
+       "min": 0
+      }
+     }
+    }
+   ]
+  }
+ },
+ "mcdoc/dispatcher": {
+  "minecraft:entity": {
+   "item_display": {
+    "kind": "reference",
+    "path": "::java::world::entity::display::ItemDisplay"
+   },
+   "block_display": {
+    "kind": "reference",
+    "path": "::java::world::entity::display::BlockDisplay"
+   }
+  }
+ }
+}

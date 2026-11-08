@@ -306,7 +306,7 @@ def test_backtracking_terminates_on_pathological_input():
 
 from pathlib import Path  # noqa: E402
 
-from minecode.scrappers import minecraftwiki  # noqa: E402
+from minecode.scrappers import minecraftwiki, spyglass  # noqa: E402
 
 _DATA = Path(__file__).parent / "data"
 
@@ -387,3 +387,79 @@ def test_wiki_html_to_text_never_raises_on_odd_markup():
     assert infobox == {"A": "1"}
     assert minecraftwiki.html_to_page_text("") == ("", {}, ["the wiki returned no page HTML"])
 
+
+# ---------------------------------------------------------------------------
+# mcdoc: item_display came back truncated, without its inherited fields
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def mcdoc_fixture(monkeypatch):
+    """Trimmed real mcdoc: ItemDisplay -> DisplayBase -> EntityBase."""
+    raw = json.loads((_DATA / "mcdoc_item_display.json").read_text("utf-8"))
+    monkeypatch.setattr(spyglass, "get_mcdoc_symbols", lambda: raw)
+    return raw
+
+
+@pytest.mark.parametrize("symbol", [
+    "item_display",
+    "minecraft:entity[item_display]",
+    "::java::world::entity::display::ItemDisplay",
+    "java::world::entity::display::ItemDisplay",
+    "ItemDisplay",
+])
+def test_mcdoc_item_display_has_own_and_inherited_fields(mcdoc_fixture, symbol):
+    """
+    Field types were replaced by "_truncated" at the default depth (dict
+    nesting was counted, not type nesting), the `...DisplayBase` spread was
+    never followed, and "item_display" itself did not resolve.
+    """
+    result = handlers.handle_spyglass_get_mcdoc_symbol(symbol)
+    assert result["success"] is True, result
+    assert result["truncated"] is False
+    fields = {f["key"]: f for f in result["fields"]}
+
+    # Own fields, with their real types.
+    assert fields["item"]["type"] == "::java::world::item::ItemStack"
+    assert "inherited_from" not in fields["item"]
+    assert fields["item_display"]["type"] == "::java::assets::model::ItemDisplayContext"
+    # Inherited from DisplayBase and, through it, EntityBase.
+    assert fields["shadow_strength"]["type"] == "float @ 0..1"
+    assert fields["teleport_duration"]["since"] == "1.20.2"
+    assert fields["billboard"]["inherited_from"].endswith("::DisplayBase")
+    assert fields["Pos"]["type"] == "[double] @ 3"
+    assert fields["Tags"]["inherited_from"].endswith("::EntityBase")
+    assert fields["FallDistance"]["until"] == "1.21.5"
+    assert fields["Team"]["since"] == "26.3"
+    assert "_truncated" not in json.dumps(result)
+    assert result["own_field_count"] == 2
+
+
+def test_mcdoc_search_finds_dispatcher_keys(mcdoc_fixture):
+    result = handlers.handle_spyglass_search_mcdoc_symbols("item_display")
+    assert result["symbols"][0] == "minecraft:entity[item_display]"
+
+
+def test_mcdoc_depth_cut_is_reported(mcdoc_fixture):
+    shallow = handlers.handle_spyglass_get_mcdoc_symbol("::test::Nested", depth=1)
+    assert shallow["truncated"] is True
+    assert shallow["truncated_at"] == ["outer"]
+    assert "depth" in shallow["how_to_expand"]
+
+    deep = handlers.handle_spyglass_get_mcdoc_symbol("::test::Nested", depth=3)
+    assert deep["truncated"] is False
+    outer = next(f for f in deep["fields"] if f["key"] == "outer")
+    assert outer["fields"][0]["fields"][0] == {"key": "leaf", "type": "int", "optional": False}
+    volume = next(f for f in deep["fields"] if f["key"] == "volume")
+    assert volume["type"] == "float @ 0<.."
+    # A spread through a dispatcher cannot be inlined; it is named, not dropped.
+    assert deep["unresolved_spreads"][0]["type"] == "minecraft:entity[[type]]"
+
+
+def test_mcdoc_ambiguous_and_dispatcher_lookups(mcdoc_fixture):
+    amb = handlers.handle_spyglass_get_mcdoc_symbol("ColorDisplay")
+    assert amb["success"] is False
+    assert len(amb["did_you_mean"]) == 2
+
+    disp = handlers.handle_spyglass_get_mcdoc_symbol("minecraft:entity")
+    assert disp["kind"] == "dispatcher"
+    assert disp["keys"] == ["block_display", "item_display"]
