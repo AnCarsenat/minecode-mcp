@@ -146,3 +146,22 @@ def test_real_server_needs_the_users_eula_consent(tmp_path):
     r = emulator.handle_emulator_check(str(tmp_path), "26.2", real_server=True)
     assert r["success"] is False and "EULA" in r["error"]
     assert "Ask the user" in r["hint"]
+
+
+def test_run_and_test_take_unloaded_chunks(pack):
+    import inspect
+    from datapack_emulator import agent
+
+    if "unloaded_chunks" not in inspect.signature(agent.run).parameters:
+        pytest.skip("datapack-emulator < 0.5.0")
+    r = emulator.handle_emulator_run(
+        str(pack), "1.21.4", ticks=1, unloaded_chunks=[[0, 0]],
+        commands=["execute if loaded 0 0 0", "execute if loaded 64 0 64"],
+        max_output_per_command=5,
+    )
+    assert r["success"], r
+    assert [c["success"] for c in r["commands"]] == [False, True]
+    t = emulator.handle_emulator_test(
+        ["0:execute if loaded 0 0 0"], str(pack), "1.21.4", unloaded_chunks=["0,0"],
+    )
+    assert t["success"] and t["ok"] is False

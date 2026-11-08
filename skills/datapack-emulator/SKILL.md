@@ -87,6 +87,16 @@ server, at 0 0 0 — use `execute as @p at @s run …` for player context):
 
 Each answer has `success`, `value` and its own `output` records.
 
+## Unloaded chunks
+
+Everything counts as loaded unless you say otherwise. To test a pack's
+"chunk not loaded" path (transport networks, chunk guards),
+pass `unloaded_chunks` to `emulator_run` / `emulator_test`:
+`[[0, 0], [1, 0]]` or `["0,0", "-1,0,minecraft:the_nether"]`. There
+`execute if loaded` is false, block commands fail with "That position is not
+loaded", and non-player entities are hidden and do not tick. Players do not
+load chunks around them in the emulator.
+
 ## Writing tests
 
 A test is `"TICK:COMMAND"` (runs after that tick's functions; tick 0 is the
