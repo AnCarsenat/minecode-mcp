@@ -298,3 +298,92 @@ def test_backtracking_terminates_on_pathological_input():
     command = "/execute " + "at @s " * 40 + "run say hi"
     result = brigadier.validate(command, _REDIRECT_TREE)
     assert "valid" in result
+
+
+# ---------------------------------------------------------------------------
+# wiki: full=true failed on every page with a nested infobox
+# ---------------------------------------------------------------------------
+
+from pathlib import Path  # noqa: E402
+
+from minecode.scrappers import minecraftwiki  # noqa: E402
+
+_DATA = Path(__file__).parent / "data"
+
+
+def _wiki_fixture(monkeypatch, payload=None):
+    if payload is None:
+        payload = json.loads((_DATA / "wiki_parse_redstone_repeater.json").read_text("utf-8"))
+    monkeypatch.setattr(minecraftwiki, "_make_request", lambda params: payload)
+    return payload
+
+
+def test_wiki_full_page_with_nested_infobox(monkeypatch):
+    """
+    get_wiki_page("Redstone Repeater", full=true) returned
+    "'NoneType' object has no attribute 'get'": the cleanup loop decomposed the
+    infobox and then read the class of a table nested inside it, which bs4 had
+    already destroyed. Fixture: the real parse response, trimmed.
+    """
+    _wiki_fixture(monkeypatch)
+    result = handlers.handle_get_wiki_page("Redstone Repeater", full=True)
+
+    assert result["success"] is True, result
+    assert result["mode"] == "full"
+    content = result["content"]
+    assert content["title"] == "Redstone Repeater"
+    assert content["infobox"]["Blast resistance"] == "0"
+    assert content["infobox"]["Stackable"] == "Yes (64)"
+    text = content["extract"]
+    assert "produces a full-strength redstone signal" in text
+    assert "Hardness | 0" in text
+    # Page furniture is gone: edit links, navbox, history JSON, hidden inputs.
+    assert "edit source" not in text
+    assert "Redstone Comparator" not in text  # only in the navbox
+    assert '"title"' not in text
+    assert "10.05" not in text and "0.05 (JE)" in text
+    assert content["truncated"] is False
+    assert [s["name"] for s in content["sections"]][:2] == ["Obtaining", "Breaking"]
+
+
+def test_wiki_full_page_truncation_is_reported(monkeypatch):
+    _wiki_fixture(monkeypatch)
+    monkeypatch.setattr(minecraftwiki, "MAX_PAGE_CHARS", 300)
+    content = handlers.handle_get_wiki_page("Redstone Repeater", full=True)["content"]
+    assert content["truncated"] is True
+    assert len(content["extract"]) <= 300 < content["full_length"]
+    assert any("truncated" in n for n in content["notes"])
+
+
+def test_wiki_full_page_follows_redirect(monkeypatch):
+    payload = _wiki_fixture(monkeypatch)
+    payload["parse"]["redirects"] = [{"from": "Repeater", "to": "Redstone Repeater"}]
+    result = handlers.handle_get_wiki_page("Repeater", full=True)
+    assert result["title"] == "Redstone Repeater"
+    assert result["content"]["redirected_from"] == "Repeater"
+    assert result["content"]["url"].endswith("/Redstone_Repeater")
+
+
+def test_wiki_full_page_degrades_to_summary(monkeypatch):
+    """A full page that cannot be fetched still answers, with a note."""
+    def boom(title):
+        raise RuntimeError("upstream changed shape")
+
+    monkeypatch.setattr(minecraftwiki, "get_page_content", boom)
+    monkeypatch.setattr(minecraftwiki, "get_page_extract",
+                        lambda title, sentences=5: "A redstone repeater is a block.")
+    result = handlers.handle_get_wiki_page("Redstone Repeater", full=True)
+    assert result["success"] is True
+    assert result["mode"] == "summary"
+    assert result["extract"]
+    assert "upstream changed shape" in result["note"]
+
+
+def test_wiki_html_to_text_never_raises_on_odd_markup():
+    html = ('<div class="infobox"><div class="infobox"><table><tr><th>A</th>'
+            '<td>1</td></tr></table></div></div><p>Body <b>text</b>.</p>')
+    text, infobox, notes = minecraftwiki.html_to_page_text(html)
+    assert text == "Body text."
+    assert infobox == {"A": "1"}
+    assert minecraftwiki.html_to_page_text("") == ("", {}, ["the wiki returned no page HTML"])
+
