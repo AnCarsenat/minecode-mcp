@@ -1,4 +1,5 @@
 {
+ "_source": "Trimmed slice of the Spyglass vanilla-mcdoc symbols API (https://api.spyglassmc.com/vanilla-mcdoc/symbols, generated from github.com/SpyglassMC/vanilla-mcdoc), fetched November 2026: EntityBase, DisplayBase, ItemDisplay and two minecraft:entity dispatcher entries. The two ColorDisplay entries are emptied stubs (they exist to make the tail name ambiguous) and '::test::Nested' is synthetic.",
  "ref": "fixture",
  "mcdoc": {
   "::java::world::entity::EntityBase": {

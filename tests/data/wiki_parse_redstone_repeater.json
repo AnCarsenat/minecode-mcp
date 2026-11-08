@@ -1,4 +1,5 @@
 {
+ "_source": "Trimmed MediaWiki action=parse response for 'Redstone Repeater' from https://minecraft.wiki/api.php (prop=text|sections|categories), fetched November 2026; images removed and text shortened. Wiki content is licensed CC BY-NC-SA 3.0 (https://minecraft.wiki/w/Minecraft_Wiki:Copyrights). Test fixture only.",
  "parse": {
   "title": "Redstone Repeater",
   "pageid": 39659,
